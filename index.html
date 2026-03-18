@@ -33,9 +33,9 @@
         font-family: var(--sans);
         font-size: 14px;
         height: 100vh;
+        overflow: hidden;
         display: grid;
         grid-template-rows: 57px 1fr 41px;
-        overflow: hidden;
       }
       header {
         border-bottom: 1px solid var(--brd);
@@ -243,7 +243,7 @@
         scrollbar-width: thin;
         scrollbar-color: var(--brd) transparent;
       }
-      .empty {
+      .empty-msg {
         color: var(--muted);
         font-size: 12px;
         text-align: center;
@@ -419,12 +419,12 @@
         background: var(--surf);
         flex-shrink: 0;
       }
-      .fi2 {
+      .finfo {
         font-family: var(--mono);
         font-size: 10px;
         color: var(--muted);
       }
-      .fi2 b {
+      .finfo b {
         color: var(--blue);
         font-weight: normal;
       }
@@ -497,9 +497,7 @@
   <body>
     <header>
       <div class="logo">XML<em> → </em>XLS<em> // </em>Extractor</div>
-      <div class="sub">
-        Generic field extractor &middot; any depth &middot; any schema
-      </div>
+      <div class="sub">Generic field extractor · any depth · any schema</div>
     </header>
     <main>
       <div class="lp">
@@ -507,23 +505,23 @@
           <div class="lbl">01 / XML Datei</div>
           <div class="dz" id="dz">
             <input type="file" id="fi" accept=".xml,text/xml,application/xml" />
-            <div class="dz-icon">&#x2B21;</div>
+            <div class="dz-icon">⬡</div>
             <div class="dz-txt">
               <strong>XML hochladen</strong>Drag &amp; Drop oder klicken
             </div>
           </div>
           <div class="fbar" id="fbar">
             <div class="fdot"></div>
-            <span class="fname" id="fname"></span>
-            <span class="fsize" id="fsize"></span>
+            <span class="fname" id="fname"></span
+            ><span class="fsize" id="fsize"></span>
           </div>
           <div class="pgwrap" id="pgwrap">
             <div class="pgtrack"><div class="pgfill" id="pgfill"></div></div>
-            <div class="pglbl" id="pglbl">Analysiere&hellip;</div>
+            <div class="pglbl" id="pglbl">Analysiere…</div>
           </div>
         </div>
         <div class="sec grow">
-          <div class="lbl">02 / Felder ausw&auml;hlen</div>
+          <div class="lbl">02 / Felder auswählen</div>
           <div class="tctrl">
             <button class="tbtn" id="btnAll" onclick="doAll()">Alle</button>
             <button class="tbtn" id="btnNone" onclick="doNone()">Keine</button>
@@ -531,19 +529,19 @@
               Flat
             </button>
             <button class="tbtn" id="btnSort" onclick="doView('az')">
-              A&ndash;Z
+              A–Z
             </button>
           </div>
           <input
             class="sinp"
             id="sinp"
             type="text"
-            placeholder="Felder filtern&hellip;"
+            placeholder="Felder filtern…"
             oninput="doSearch(this.value)"
           />
           <div class="fscroll" id="flist">
-            <div class="empty">
-              &larr; XML hochladen<br />um Felder zu erkunden
+            <div class="empty-msg">
+              ← XML hochladen<br />um Felder zu erkunden
             </div>
           </div>
         </div>
@@ -551,112 +549,107 @@
       <div class="rp">
         <div class="rh">
           <div class="rtitle">Vorschau</div>
-          <div class="rstats" id="rstats">&mdash;</div>
+          <div class="rstats" id="rstats">—</div>
         </div>
         <div class="twrap" id="twrap">
           <div class="pempty">
-            <div class="icon">&#x2B21;</div>
-            <div>Felder ausw&auml;hlen f&uuml;r Vorschau</div>
+            <div class="icon">⬡</div>
+            <div>Felder auswählen für Vorschau</div>
           </div>
         </div>
       </div>
     </main>
     <footer>
-      <div class="fi2" id="finfo">Kein Dokument geladen</div>
+      <div class="finfo" id="finfo">Kein Dokument geladen</div>
       <button class="ebtn" id="ebtn" disabled onclick="doExport()">
-        &darr; Excel exportieren
+        ↓ Excel exportieren
       </button>
     </footer>
     <div class="toast" id="toast"></div>
+
     <script>
-      // ── STATE ────────────────────────────────────────────────────────────────────
-      var fields = []; // [{path,leaf,isAttr,count}]
-      var selected = new Set();
-      var rows = [];
-      var view = "flat";
-      var query = "";
-      var fileName = "";
+      /* STATE */
+      var gFields = [],
+        gSelected = new Set(),
+        gRows = [],
+        gView = "flat",
+        gQuery = "",
+        gFileName = "";
 
-      // ── STORAGE (localStorage — simple, synchronous, no async bugs) ──────────────
-      var STORE_KEY = "xmlex_v1";
-
-      function saveToStorage() {
+      /* STORAGE */
+      var SKEY = "xmlex_v5";
+      function stateSave() {
         try {
-          var data = {
-            fields: fields,
-            selected: Array.from(selected),
-            rows: rows,
-            view: view,
-            fileName: fileName,
-          };
-          localStorage.setItem(STORE_KEY, JSON.stringify(data));
-        } catch (e) {
-          console.warn("save failed", e);
-        }
+          localStorage.setItem(
+            SKEY,
+            JSON.stringify({
+              fields: gFields,
+              selected: Array.from(gSelected),
+              rows: gRows,
+              view: gView,
+              fileName: gFileName,
+            }),
+          );
+        } catch (e) {}
       }
-
-      function loadFromStorage() {
+      function stateLoad() {
         try {
-          var raw = localStorage.getItem(STORE_KEY);
-          if (!raw) return false;
-          var data = JSON.parse(raw);
-          if (!data || !data.rows || data.rows.length === 0) return false;
-          fields = data.fields || [];
-          selected = new Set(data.selected || []);
-          rows = data.rows || [];
-          view = data.view || "flat";
-          fileName = data.fileName || "";
+          var d = JSON.parse(localStorage.getItem(SKEY) || "null");
+          if (!d || !d.rows || !d.rows.length) return false;
+          gFields = d.fields || [];
+          gSelected = new Set(d.selected || []);
+          gRows = d.rows || [];
+          gView = d.view || "flat";
+          gFileName = d.fileName || "";
           return true;
         } catch (e) {
           return false;
         }
       }
 
-      // ── STARTUP ──────────────────────────────────────────────────────────────────
-      if (loadFromStorage()) {
-        g("fbar").classList.add("show");
-        g("fname").textContent = fileName + ".xml";
-        g("fsize").textContent = rows.length + " Datensätze (gecacht)";
+      /* STARTUP */
+      if (stateLoad()) {
+        el("fbar").classList.add("show");
+        el("fname").textContent = gFileName + ".xml";
+        el("fsize").textContent = gRows.length + " Datensätze (gecacht)";
+        el("ebtn").disabled = gSelected.size === 0;
         setFooter();
         syncBtns();
         renderList();
         renderTable();
-        toast(
-          "Letzter Stand wiederhergestellt (" + rows.length + " Datensätze)",
-        );
+        showToast("Stand wiederhergestellt (" + gRows.length + " Datensätze)");
       }
 
-      // ── FILE HANDLING ─────────────────────────────────────────────────────────────
-      var dzel = g("dz");
-      g("fi").addEventListener("change", function (e) {
+      /* FILE */
+      var dzEl = el("dz");
+      el("fi").addEventListener("change", function (e) {
         if (e.target.files[0]) loadFile(e.target.files[0]);
       });
-      dzel.addEventListener("dragover", function (e) {
+      dzEl.addEventListener("dragover", function (e) {
         e.preventDefault();
-        dzel.classList.add("over");
+        dzEl.classList.add("over");
       });
-      dzel.addEventListener("dragleave", function () {
-        dzel.classList.remove("over");
+      dzEl.addEventListener("dragleave", function () {
+        dzEl.classList.remove("over");
       });
-      dzel.addEventListener("drop", function (e) {
+      dzEl.addEventListener("drop", function (e) {
         e.preventDefault();
-        dzel.classList.remove("over");
+        dzEl.classList.remove("over");
         if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
       });
 
       function loadFile(file) {
-        fileName = file.name.replace(/\.xml$/i, "");
-        g("fbar").classList.add("show");
-        g("fname").textContent = file.name;
-        g("fsize").textContent = fmtB(file.size);
-        pg(0, "Lese Datei…");
+        gFileName = file.name.replace(/\.xml$/i, "");
+        el("fbar").classList.add("show");
+        el("fname").textContent = file.name;
+        el("fsize").textContent = fmtB(file.size);
+        setPg(0, "Lese Datei…");
         var r = new FileReader();
         r.onload = function (e) {
           parseXML(e.target.result);
         };
         r.readAsText(file);
       }
-
       function fmtB(n) {
         return n < 1024
           ? n + " B"
@@ -665,48 +658,122 @@
             : (n / 1048576).toFixed(1) + " MB";
       }
 
-      // ── XML PARSER ────────────────────────────────────────────────────────────────
-      function tn(el) {
-        // Always return uppercase tag name, works for both XML and HTML-parsed docs
-        return (el.localName || el.tagName || "").toUpperCase();
+      /* ============================================================
+   PARSER
+   Verified against real namespaced XML (xmlns="...").
+   Key design:
+   - tagUC(node): returns uppercase localName, strips namespace prefix
+   - nsFind(parent,tag): uses getElementsByTagNameNS('*',tag) which works
+     regardless of default or prefixed XML namespaces
+   - Row anchor: element with highest direct-child repeat count, ties broken
+     by shallowest depth — correctly picks INVESTMENT over INVESTMENTIDENTIFIER
+   - walkNodeAt(node, fullPath, row): fullPath is the COMPLETE path for THIS
+     node (pre-built by caller), so we never double-append the tag name
+   ============================================================ */
+
+      function tagUC(node) {
+        var n = node.localName || node.tagName || "";
+        if (n.indexOf(":") !== -1) n = n.split(":").pop();
+        return n.toUpperCase();
       }
 
-      function byTag(parent, tag) {
-        // Find children by tag, case-insensitive
-        var r = [];
-        var all = parent.getElementsByTagName(tag);
-        if (all.length) return Array.from(all);
-        all = parent.getElementsByTagName(tag.toLowerCase());
-        if (all.length) return Array.from(all);
+      /* Namespace-safe search: works for xmlns= documents AND plain HTML-parsed docs */
+      function nsFind(parent, localTag) {
+        var r = Array.from(parent.getElementsByTagNameNS("*", localTag));
+        if (!r.length) r = Array.from(parent.getElementsByTagName(localTag));
+        if (!r.length)
+          r = Array.from(parent.getElementsByTagName(localTag.toLowerCase()));
         return r;
       }
 
+      /* Group direct children by uppercase local tag name */
       function groupKids(node) {
         var g = {};
         for (var i = 0; i < node.children.length; i++) {
-          var t = tn(node.children[i]);
+          var t = tagUC(node.children[i]);
           if (!g[t]) g[t] = [];
           g[t].push(node.children[i]);
         }
         return g;
       }
 
-      function parseXML(text) {
-        pg(10, "Parse XML…");
+      /* Walk node where `path` is the ALREADY-COMPLETE path for this node.
+   Children get path = path + '/' + childTag  (or indexed variant) */
+      function walkNodeAt(node, path, row, kvMap) {
+        /* attributes */
+        for (var ai = 0; ai < node.attributes.length; ai++) {
+          var a = node.attributes[ai];
+          if (a.name.indexOf(":") === -1)
+            row[path + "/@" + a.name.toUpperCase()] = a.value;
+        }
+        /* leaf */
+        if (!node.children.length) {
+          row[path] = node.textContent.trim();
+          return;
+        }
 
-        // Fix bare & not part of XML entities
+        var gr = groupKids(node);
+        var tags = Object.keys(gr);
+        for (var ti = 0; ti < tags.length; ti++) {
+          var ctag = tags[ti],
+            sibs = gr[ctag];
+          if (sibs.length >= 2 && kvMap[ctag]) {
+            /* KV pivot */
+            var kv = kvMap[ctag];
+            for (var si = 0; si < sibs.length; si++) {
+              var sib = sibs[si];
+              var kEls = nsFind(sib, kv.k),
+                vEls = nsFind(sib, kv.v);
+              if (!kEls.length) continue;
+              var kn = kEls[0].textContent
+                .trim()
+                .replace(/[\/\\?*\[\]:]/g, "_");
+              var col = path + "/" + ctag + "[" + kn + "]";
+              row[col] = vEls.length ? vEls[0].textContent.trim() : "";
+              /* any extra fields inside this KV element */
+              for (var sci = 0; sci < sib.children.length; sci++) {
+                var sc = sib.children[sci];
+                if (tagUC(sc) !== kv.k && tagUC(sc) !== kv.v)
+                  walkNodeAt(sc, col + "/" + tagUC(sc), row, kvMap);
+              }
+            }
+          } else if (sibs.length >= 2) {
+            /* Indexed repeating elements */
+            for (var ri2 = 0; ri2 < sibs.length; ri2++)
+              walkNodeAt(
+                sibs[ri2],
+                path + "/" + ctag + "[" + (ri2 + 1) + "]",
+                row,
+                kvMap,
+              );
+          } else {
+            walkNodeAt(sibs[0], path + "/" + ctag, row, kvMap);
+          }
+        }
+      }
+
+      function parseXML(text) {
+        setPg(10, "Parse XML…");
+
+        /* Fix bare & */
         text = text.replace(
           /&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)/g,
           "&amp;",
         );
 
-        // Parse: try strict XML, fall back to innerHTML repair
-        var root = null;
+        /* Parse — try strict XML first (required for xmlns= namespaced documents) */
+        var root = null,
+          errMsg = "";
         try {
-          var d = new DOMParser().parseFromString(text, "text/xml");
-          if (!d.querySelector("parsererror")) root = d.documentElement;
-        } catch (e) {}
+          var doc = new DOMParser().parseFromString(text, "text/xml");
+          var pe = doc.querySelector("parsererror");
+          if (pe) errMsg = pe.textContent.slice(0, 120);
+          else root = doc.documentElement;
+        } catch (e) {
+          errMsg = String(e);
+        }
 
+        /* Fallback: innerHTML repair for broken XML */
         if (!root) {
           try {
             var div = document.createElement("div");
@@ -719,135 +786,105 @@
         }
 
         if (!root) {
-          pg(0, "");
           hidePg();
-          toast("XML konnte nicht gelesen werden.", true);
+          showToast("XML Fehler: " + errMsg, true);
           return;
         }
 
-        pg(25, "Erkunde Struktur…");
+        setPg(25, "Erkunde Struktur…");
 
-        // Find row anchor = most repeated element
-        var dc = {};
-        (function scanD(n, d) {
-          if (n.nodeType !== 1) return;
-          var k = tn(n) + "@" + d;
-          dc[k] = (dc[k] || 0) + 1;
-          for (var i = 0; i < n.children.length; i++)
-            scanD(n.children[i], d + 1);
-        })(root, 0);
-
-        var bestK = "",
-          bestN = 0;
-        Object.keys(dc).forEach(function (k) {
-          if (dc[k] > bestN) {
-            bestN = dc[k];
-            bestK = k;
+        /* Find row anchor: tag with highest direct-child repeat, shallowest depth wins ties */
+        var repInfo = {};
+        function scanRep(node, depth) {
+          var gr = groupKids(node);
+          var ts = Object.keys(gr);
+          for (var i = 0; i < ts.length; i++) {
+            var t = ts[i],
+              cnt = gr[t].length;
+            if (!repInfo[t]) repInfo[t] = { cnt: cnt, depth: depth + 1 };
+            else if (cnt > repInfo[t].cnt)
+              repInfo[t] = { cnt: cnt, depth: depth + 1 };
+            else if (cnt === repInfo[t].cnt && depth + 1 < repInfo[t].depth)
+              repInfo[t].depth = depth + 1;
+            for (var j = 0; j < gr[t].length; j++) scanRep(gr[t][j], depth + 1);
           }
-        });
-        var rowTag = bestK ? bestK.split("@")[0] : tn(root);
-        var rowEls = byTag(root, rowTag);
+        }
+        scanRep(root, 0);
 
-        pg(40, rowEls.length + " Datensätze…");
+        var rowTag = tagUC(root),
+          bestCnt = 0,
+          bestDep = 999;
+        var rkeys = Object.keys(repInfo);
+        for (var ri = 0; ri < rkeys.length; ri++) {
+          var inf = repInfo[rkeys[ri]];
+          if (
+            inf.cnt > bestCnt ||
+            (inf.cnt === bestCnt && inf.depth < bestDep)
+          ) {
+            bestCnt = inf.cnt;
+            bestDep = inf.depth;
+            rowTag = rkeys[ri];
+          }
+        }
+        var rowEls = nsFind(root, rowTag);
+        setPg(40, rowEls.length + " Datensätze…");
 
-        // Detect KEY/VALUE patterns (e.g. TYPE+VALUE sibling pairs)
+        /* Detect KV patterns */
         var kvMap = {};
         function detectKV(node) {
           var gr = groupKids(node);
-          Object.keys(gr).forEach(function (tag) {
-            var sibs = gr[tag];
+          var ts = Object.keys(gr);
+          for (var i = 0; i < ts.length; i++) {
+            var t = ts[i],
+              sibs = gr[t];
             if (sibs.length >= 2 && sibs[0].children.length >= 2) {
-              var kTag = tn(sibs[0].children[0]);
-              var vTag = tn(sibs[0].children[1]);
-              var keys = new Set();
-              sibs.forEach(function (s) {
-                var el = byTag(s, kTag)[0];
-                if (el) keys.add(el.textContent.trim());
-              });
-              if (keys.size > 1) kvMap[tag] = { k: kTag, v: vTag };
+              var kTag = tagUC(sibs[0].children[0]);
+              var vTag = tagUC(sibs[0].children[1]);
+              var keys = {};
+              for (var si = 0; si < sibs.length; si++) {
+                var kEls = nsFind(sibs[si], kTag);
+                if (kEls.length) keys[kEls[0].textContent.trim()] = 1;
+              }
+              if (Object.keys(keys).length > 1) kvMap[t] = { k: kTag, v: vTag };
             }
             detectKV(sibs[0]);
-          });
+          }
         }
         if (rowEls.length) detectKV(rowEls[0]);
 
-        pg(55, "Extrahiere Felder…");
+        setPg(55, "Extrahiere Felder…");
 
-        // Extract flat row objects
-        function walkNode(node, path, row) {
-          if (node.nodeType !== 1) return;
-          var tag = tn(node);
-          var cur = path ? path + "/" + tag : tag;
-          // attributes
-          for (var ai = 0; ai < node.attributes.length; ai++) {
-            var a = node.attributes[ai];
-            if (a.name.indexOf(":") === -1)
-              row[cur + "/@" + a.name.toUpperCase()] = a.value;
-          }
-          if (node.children.length === 0) {
-            row[cur] = node.textContent.trim();
-            return;
-          }
-          var gr = groupKids(node);
-          Object.keys(gr).forEach(function (ctag) {
-            var sibs = gr[ctag];
-            if (sibs.length >= 2 && kvMap[ctag]) {
-              var kv = kvMap[ctag];
-              sibs.forEach(function (sib) {
-                var kEl = byTag(sib, kv.k)[0];
-                var vEl = byTag(sib, kv.v)[0];
-                if (!kEl) return;
-                var keyName = kEl.textContent
-                  .trim()
-                  .replace(/[\/\\?*\[\]:]/g, "_");
-                var col = cur + "/" + ctag + "[" + keyName + "]";
-                row[col] = vEl ? vEl.textContent.trim() : "";
-                for (var i = 0; i < sib.children.length; i++) {
-                  var sc = sib.children[i];
-                  var st = tn(sc);
-                  if (st !== kv.k && st !== kv.v)
-                    walkNode(sc, cur + "/" + ctag + "[" + keyName + "]", row);
-                }
-              });
-            } else if (sibs.length >= 2) {
-              sibs.forEach(function (s, i) {
-                walkNode(s, cur + "/" + ctag + "[" + (i + 1) + "]", row);
-              });
-            } else {
-              walkNode(sibs[0], cur, row);
-            }
-          });
-        }
-
+        /* Extract rows */
         var newRows = [];
         for (var i = 0; i < rowEls.length; i++) {
           var row = {};
-          walkNode(rowEls[i], "", row);
+          walkNodeAt(rowEls[i], rowTag, row, kvMap);
           newRows.push(row);
         }
 
-        pg(82, "Baue Feldliste…");
+        setPg(82, "Baue Feldliste…");
 
-        // Build field list in document order
+        /* Build field list in document order */
         var cmap = {},
           omap = {},
           oi = 0;
-        newRows.forEach(function (row) {
-          Object.keys(row).forEach(function (k) {
+        for (var ri2 = 0; ri2 < newRows.length; ri2++) {
+          var ks = Object.keys(newRows[ri2]);
+          for (var ki = 0; ki < ks.length; ki++) {
+            var k = ks[ki];
             if (omap[k] === undefined) omap[k] = oi++;
-            if (row[k] !== "") cmap[k] = (cmap[k] || 0) + 1;
+            if (newRows[ri2][k] !== "") cmap[k] = (cmap[k] || 0) + 1;
             else if (cmap[k] === undefined) cmap[k] = 0;
-          });
-        });
-
-        fields = Object.keys(cmap)
+          }
+        }
+        gFields = Object.keys(cmap)
           .sort(function (a, b) {
             return (omap[a] || 0) - (omap[b] || 0);
           })
           .map(function (path) {
-            var parts = path.split("/");
-            var lf = parts[parts.length - 1];
-            var isA = lf.charAt(0) === "@";
+            var pts = path.split("/"),
+              lf = pts[pts.length - 1],
+              isA = lf.charAt(0) === "@";
             return {
               path: path,
               leaf: isA ? lf.slice(1) : lf,
@@ -855,180 +892,170 @@
               count: cmap[path],
             };
           });
-        rows = newRows;
-        selected = new Set();
+        gRows = newRows;
+        gSelected = new Set();
 
-        pg(100, "Fertig!");
+        setPg(100, "Fertig!");
         setTimeout(hidePg, 700);
+        el("ebtn").disabled = true;
         setFooter();
         syncBtns();
         renderList();
         renderTable();
-        g("ebtn").disabled = true;
-        toast(
-          rows.length + " Datensätze, " + fields.length + " Felder erkannt",
+        showToast(
+          gRows.length + " Datensätze, " + gFields.length + " Felder erkannt",
         );
-        saveToStorage();
+        stateSave();
       }
 
-      // ── FIELD LIST ────────────────────────────────────────────────────────────────
+      /* FIELD LIST */
       function renderList() {
-        var el = g("flist");
-        if (!fields.length) {
-          el.innerHTML =
-            '<div class="empty">&larr; XML hochladen<br>um Felder zu erkunden</div>';
+        var c = el("flist");
+        if (!gFields.length) {
+          c.innerHTML =
+            '<div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>';
           return;
         }
-        var list = fields.slice();
-        if (query) {
-          var q = query.toLowerCase();
+        var list = gFields.slice();
+        if (gQuery) {
+          var q = gQuery.toLowerCase();
           list = list.filter(function (f) {
             return f.path.toLowerCase().indexOf(q) !== -1;
           });
         }
-        if (view === "az")
+        if (gView === "az")
           list.sort(function (a, b) {
             return a.path.localeCompare(b.path);
           });
         if (!list.length) {
-          el.innerHTML = '<div class="empty">Keine Treffer</div>';
+          c.innerHTML = '<div class="empty-msg">Keine Treffer</div>';
           return;
         }
         var h = "";
-        list.forEach(function (f) {
-          var sel = selected.has(f.path);
-          var kv = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
+        for (var i = 0; i < list.length; i++) {
+          var f = list[i],
+            sel = gSelected.has(f.path);
+          var kvm = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
           var pre, lf;
-          if (kv) {
-            pre = kv[1].replace(/\/$/, "");
-            lf = kv[2];
+          if (kvm) {
+            pre = kvm[1].replace(/\/$/, "");
+            lf = kvm[2];
           } else {
-            var p = f.path.split("/");
-            pre = p.slice(0, -1).join("/");
-            lf = p[p.length - 1];
+            var pts = f.path.split("/");
+            pre = pts.slice(0, -1).join("/");
+            lf = pts[pts.length - 1];
           }
           var lfc = f.isAttr ? "lf at" : "lf";
           var dp = pre
             ? '<span style="color:var(--muted)">' +
-              he(pre) +
+              esc(pre) +
               '/</span><span class="' +
               lfc +
               '">' +
-              he(lf) +
+              esc(lf) +
               "</span>"
-            : '<span class="' + lfc + '">' + he(lf) + "</span>";
+            : '<span class="' + lfc + '">' + esc(lf) + "</span>";
           h +=
             '<div class="fi' +
             (sel ? " sel" : "") +
             '" data-path="' +
-            he(f.path) +
-            '" onclick="toggle(this)">' +
-            '<div class="fck"></div>' +
-            '<div class="fp" title="' +
-            he(f.path) +
+            esc(f.path) +
+            '" onclick="doToggle(this)"><div class="fck"></div><div class="fp" title="' +
+            esc(f.path) +
             '">' +
             dp +
-            "</div>" +
-            '<div class="fc">' +
+            '</div><div class="fc">' +
             f.count +
-            "</div>" +
-            "</div>";
-        });
-        el.innerHTML = h;
+            "</div></div>";
+        }
+        c.innerHTML = h;
       }
 
-      function toggle(el) {
-        var p = el.getAttribute("data-path");
+      function doToggle(e) {
+        var p = e.getAttribute("data-path");
         if (!p) return;
-        if (selected.has(p)) selected.delete(p);
-        else selected.add(p);
-        g("ebtn").disabled = selected.size === 0;
+        if (gSelected.has(p)) gSelected.delete(p);
+        else gSelected.add(p);
+        el("ebtn").disabled = gSelected.size === 0;
         syncBtns();
         renderList();
         renderTable();
-        saveToStorage();
+        stateSave();
       }
-
       function doAll() {
-        fields.forEach(function (f) {
-          selected.add(f.path);
+        gFields.forEach(function (f) {
+          gSelected.add(f.path);
         });
-        g("ebtn").disabled = false;
+        el("ebtn").disabled = false;
         syncBtns();
         renderList();
         renderTable();
-        saveToStorage();
+        stateSave();
       }
-
       function doNone() {
-        selected.clear();
-        g("ebtn").disabled = true;
+        gSelected.clear();
+        el("ebtn").disabled = true;
         syncBtns();
         renderList();
         renderTable();
-        saveToStorage();
+        stateSave();
       }
-
       function doView(v) {
-        view = v;
+        gView = v;
         syncBtns();
         renderList();
-        saveToStorage();
+        stateSave();
       }
-
       function doSearch(q) {
-        query = q;
+        gQuery = q;
         renderList();
       }
-
       function syncBtns() {
-        var selN = 0;
-        fields.forEach(function (f) {
-          if (selected.has(f.path)) selN++;
-        });
-        var allOn = fields.length > 0 && selN === fields.length;
-        var noneOn = selN === 0;
-        g("btnAll").className = "tbtn" + (allOn ? " on" : "");
-        g("btnNone").className = "tbtn" + (noneOn ? " on" : "");
-        g("btnFlat").className = "tbtn" + (view === "flat" ? " on" : "");
-        g("btnSort").className = "tbtn" + (view === "az" ? " on" : "");
+        var n = 0;
+        for (var i = 0; i < gFields.length; i++) {
+          if (gSelected.has(gFields[i].path)) n++;
+        }
+        el("btnAll").className =
+          "tbtn" + (gFields.length > 0 && n === gFields.length ? " on" : "");
+        el("btnNone").className = "tbtn" + (n === 0 ? " on" : "");
+        el("btnFlat").className = "tbtn" + (gView === "flat" ? " on" : "");
+        el("btnSort").className = "tbtn" + (gView === "az" ? " on" : "");
       }
 
-      // ── PREVIEW TABLE ─────────────────────────────────────────────────────────────
+      /* PREVIEW */
       var PLIMIT = 200;
       function renderTable() {
-        var wrap = g("twrap");
-        var stats = g("rstats");
-        if (!selected.size) {
+        var wrap = el("twrap"),
+          stats = el("rstats");
+        if (!gSelected.size) {
           wrap.innerHTML =
-            '<div class="pempty"><div class="icon">&#x2B21;</div><div>Felder auswählen für Vorschau</div></div>';
-          stats.innerHTML = "&mdash;";
+            '<div class="pempty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>';
+          stats.innerHTML = "—";
           return;
         }
-        var cols = Array.from(selected);
-        var labels = cols.map(plabel);
-        var rws = rows.slice(0, PLIMIT);
+        var cols = Array.from(gSelected),
+          labels = cols.map(pathLabel),
+          slice = gRows.slice(0, PLIMIT);
         var th = "";
-        cols.forEach(function (c, i) {
+        for (var ci = 0; ci < cols.length; ci++)
           th +=
             "<th>" +
-            he(labels[i]) +
+            esc(labels[ci]) +
             '<span class="thx" data-path="' +
-            he(c) +
-            '" onclick="rmCol(this)" title="Entfernen">✕</span></th>';
-        });
+            esc(cols[ci]) +
+            '" onclick="doRmCol(this)">✕</span></th>';
         var tb = "";
-        rws.forEach(function (row) {
+        for (var ri = 0; ri < slice.length; ri++) {
           tb += "<tr>";
-          cols.forEach(function (c) {
-            var v = row[c];
+          for (var ci2 = 0; ci2 < cols.length; ci2++) {
+            var v = slice[ri][cols[ci2]];
             tb +=
               v !== undefined && v !== ""
-                ? '<td title="' + he(v) + '">' + he(v) + "</td>"
+                ? '<td title="' + esc(v) + '">' + esc(v) + "</td>"
                 : '<td class="nil">—</td>';
-          });
+          }
           tb += "</tr>";
-        });
+        }
         wrap.innerHTML =
           "<table><thead><tr>" +
           th +
@@ -1037,36 +1064,36 @@
           "</tbody></table>";
         stats.innerHTML =
           "<b>" +
-          rows.length +
-          "</b> Zeilen &middot; <b>" +
+          gRows.length +
+          "</b> Zeilen · <b>" +
           cols.length +
           "</b> Spalten" +
-          (rows.length > PLIMIT ? " &middot; Vorschau: " + PLIMIT : "");
+          (gRows.length > PLIMIT ? " · Vorschau: " + PLIMIT : "");
       }
-
-      function rmCol(el) {
-        var p = el.getAttribute("data-path");
-        selected.delete(p);
-        g("ebtn").disabled = selected.size === 0;
+      function doRmCol(e) {
+        var p = e.getAttribute("data-path");
+        gSelected.delete(p);
+        el("ebtn").disabled = gSelected.size === 0;
         syncBtns();
         renderList();
         renderTable();
-        saveToStorage();
+        stateSave();
       }
 
-      // ── EXPORT ────────────────────────────────────────────────────────────────────
+      /* EXPORT */
       function doExport() {
-        if (!selected.size || !rows.length) return;
-        var cols = Array.from(selected);
-        var labels = cols.map(plabel);
-        var data = [labels];
-        rows.forEach(function (row) {
-          data.push(
-            cols.map(function (c) {
-              return row[c] !== undefined ? row[c] : "";
-            }),
-          );
-        });
+        if (!gSelected.size || !gRows.length) return;
+        var cols = Array.from(gSelected),
+          labels = cols.map(pathLabel),
+          data = [labels];
+        for (var ri = 0; ri < gRows.length; ri++) {
+          var row = [];
+          for (var ci = 0; ci < cols.length; ci++) {
+            var v = gRows[ri][cols[ci]];
+            row.push(v !== undefined ? v : "");
+          }
+          data.push(row);
+        }
         var ws = XLSX.utils.aoa_to_sheet(data);
         var rng = XLSX.utils.decode_range(ws["!ref"]);
         for (var c = rng.s.c; c <= rng.e.c; c++) {
@@ -1080,30 +1107,29 @@
         }
         ws["!cols"] = labels.map(function (lbl, ci) {
           var mx = lbl.length;
-          rows.forEach(function (row) {
-            var v = row[cols[ci]];
+          for (var ri = 0; ri < gRows.length; ri++) {
+            var v = gRows[ri][cols[ci]];
             if (v && v.length > mx) mx = v.length;
-          });
+          }
           return { wch: Math.min(mx + 2, 50) };
         });
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Extraktion");
         XLSX.writeFile(
           wb,
-          (fileName || "export") +
+          (gFileName || "export") +
             "_" +
             new Date().toISOString().slice(0, 10) +
             ".xlsx",
         );
-        toast(rows.length + " Zeilen exportiert");
+        showToast(gRows.length + " Zeilen exportiert");
       }
 
-      // ── UTILS ─────────────────────────────────────────────────────────────────────
-      function g(id) {
+      /* UTILS */
+      function el(id) {
         return document.getElementById(id);
       }
-
-      function he(s) {
+      function esc(s) {
         return String(s)
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
@@ -1111,40 +1137,35 @@
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#39;");
       }
-
-      function plabel(path) {
+      function pathLabel(path) {
         var m = path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/);
         if (m) return m[2] ? m[1] + " / " + m[2] : m[1];
         return path.split("/").pop().replace("@", "");
       }
-
-      function pg(pct, lbl) {
-        g("pgwrap").classList.add("show");
-        g("pgfill").style.width = pct + "%";
-        g("pgfill").style.width = pct + "%";
-        g("pglbl").textContent = lbl;
-      }
-      function hidePg() {
-        g("pgwrap").classList.remove("show");
-      }
-
       function setFooter() {
-        g("finfo").innerHTML =
+        el("finfo").innerHTML =
           "<b>" +
-          rows.length +
-          "</b> Datensätze &middot; <b>" +
-          fields.length +
+          gRows.length +
+          "</b> Datensätze · <b>" +
+          gFields.length +
           "</b> Felder erkannt";
       }
-
+      function setPg(pct, lbl) {
+        el("pgwrap").classList.add("show");
+        el("pgfill").style.width = pct + "%";
+        el("pglbl").textContent = lbl;
+      }
+      function hidePg() {
+        el("pgwrap").classList.remove("show");
+      }
       var _tt;
-      function toast(msg, isErr) {
-        var el = g("toast");
-        el.textContent = msg;
-        el.className = "toast show" + (isErr ? " err" : "");
+      function showToast(msg, isErr) {
+        var t = el("toast");
+        t.textContent = msg;
+        t.className = "toast show" + (isErr ? " err" : "");
         clearTimeout(_tt);
         _tt = setTimeout(function () {
-          el.classList.remove("show");
+          t.classList.remove("show");
         }, 3000);
       }
     </script>
