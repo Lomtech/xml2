@@ -1,1027 +1,1337 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XML → Excel Extractor</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XML → Excel Extractor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap");
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg: #f5f5f3;
-  --surface: #ffffff;
-  --surface2: #f0f0ee;
-  --border: #ddddd9;
-  --border-hi: #c0c0bc;
-  --blue: #2563eb;
-  --text: #1a1a1a;
-  --muted: #8a8a85;
-  --red: #dc2626;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', sans-serif;
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 14px;
-  height: 100vh;
-  display: grid;
-  grid-template-rows: 57px 1fr 41px;
-  overflow: hidden;
-}
-
-/* HEADER */
-header {
-  border-bottom: 1px solid var(--border);
-  padding: 0 32px;
-  display: flex;
-  align-items: center;
-  background: var(--surface);
-  flex-shrink: 0;
-}
-.logo {
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.logo em { color: var(--muted); font-style: normal; }
-.subtitle { color: var(--muted); font-size: 12px; font-family: var(--mono); margin-left: 16px; }
-
-/* MAIN */
-main {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  overflow: hidden;
-}
-
-/* LEFT */
-.left-panel {
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.panel-section {
-  border-bottom: 1px solid var(--border);
-  padding: 18px 20px;
-  flex-shrink: 0;
-}
-.panel-section.grow {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  border-bottom: none;
-}
-.section-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-
-/* DROPZONE */
-.dropzone {
-  border: 1px dashed var(--border-hi);
-  background: var(--surface2);
-  border-radius: 4px;
-  padding: 22px 16px;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  transition: border-color .15s, background .15s;
-}
-.dropzone:hover, .dropzone.over {
-  border-color: var(--blue);
-  background: rgba(37,99,235,.03);
-}
-.dropzone input[type=file] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
-}
-.dz-icon { font-size: 24px; }
-.dz-text { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
-.dz-text strong { display: block; color: var(--text); font-size: 13px; }
-
-/* FILE INFO */
-.file-bar {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 10px 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  margin-top: 10px;
-}
-.file-bar.show { display: flex; }
-.file-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
-.file-name { color: var(--blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.file-size { color: var(--muted); flex-shrink: 0; }
-
-/* PROGRESS */
-.progress-wrap { display: none; margin-top: 10px; }
-.progress-wrap.show { display: block; }
-.progress-track { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--blue); width: 0; transition: width .2s; }
-.progress-label { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 5px; }
-
-/* TREE CONTROLS */
-.tree-controls { display: flex; gap: 5px; flex-shrink: 0; margin-bottom: 8px; }
-.tbtn {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 4px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all .1s;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-.tbtn:hover { color: var(--text); border-color: var(--border-hi); }
-.tbtn.on { color: var(--blue); border-color: var(--blue); background: rgba(37,99,235,.06); }
-
-/* SEARCH */
-.search-inp {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 7px 10px;
-  border-radius: 3px;
-  outline: none;
-  margin-bottom: 8px;
-  flex-shrink: 0;
-  transition: border-color .15s;
-}
-.search-inp:focus { border-color: var(--blue); }
-.search-inp::placeholder { color: var(--muted); }
-
-/* FIELD LIST */
-.field-scroll {
-  flex: 1;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.empty-msg {
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
-  padding: 32px 16px;
-  line-height: 1.8;
-  font-family: var(--mono);
-}
-.fitem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background .08s;
-  user-select: none;
-}
-.fitem:hover { background: var(--surface2); }
-.fitem.sel { background: rgba(37,99,235,.06); }
-.fcheck {
-  width: 14px; height: 14px;
-  border: 1px solid var(--border-hi);
-  border-radius: 2px;
-  flex-shrink: 0;
-  position: relative;
-  transition: all .1s;
-}
-.fitem.sel .fcheck { background: var(--blue); border-color: var(--blue); }
-.fitem.sel .fcheck::after {
-  content: '';
-  position: absolute;
-  left: 3px; top: 1px;
-  width: 6px; height: 9px;
-  border: 1.5px solid #fff;
-  border-top: none;
-  border-left: none;
-  transform: rotate(45deg);
-}
-.fpath {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.fpath .fleaf { color: var(--text); }
-.fpath .fleaf.attr { color: var(--blue); }
-.fcount { font-family: var(--mono); font-size: 10px; color: var(--border-hi); flex-shrink: 0; }
-
-/* RIGHT */
-.right-panel { display: flex; flex-direction: column; overflow: hidden; }
-.right-header {
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--surface);
-  flex-shrink: 0;
-}
-.preview-title { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
-.preview-stats { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-.preview-stats b { color: var(--blue); font-weight: normal; }
-.table-wrap { flex: 1; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-.preview-empty {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
-  gap: 12px;
-}
-.preview-empty .icon { font-size: 36px; opacity: .25; }
-
-/* TABLE */
-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
-thead th {
-  position: sticky; top: 0;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-hi);
-  padding: 9px 14px;
-  text-align: left;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  z-index: 10;
-}
-.th-x {
-  display: inline-block;
-  margin-left: 8px;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 10px;
-  font-weight: normal;
-}
-.th-x:hover { color: var(--red); }
-tbody tr { border-bottom: 1px solid var(--border); }
-tbody tr:hover { background: var(--surface2); }
-tbody td { padding: 7px 14px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-tbody td.nil { color: var(--border-hi); }
-
-/* FOOTER */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--surface);
-  flex-shrink: 0;
-}
-.footer-info { font-family: var(--mono); font-size: 10px; color: var(--muted); }
-.footer-info b { color: var(--blue); font-weight: normal; }
-.export-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--text);
-  color: #fff;
-  border: none;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  padding: 8px 20px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background .15s, transform .1s;
-}
-.export-btn:hover { background: #333; transform: translateY(-1px); }
-.export-btn:active { transform: none; }
-.export-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
-
-/* TOAST */
-.toast {
-  position: fixed;
-  bottom: 56px;
-  right: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--blue);
-  border-radius: 4px;
-  padding: 11px 16px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text);
-  z-index: 999;
-  max-width: 320px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  transform: translateX(140%);
-  transition: transform .25s cubic-bezier(.16,1,.3,1);
-}
-.toast.show { transform: translateX(0); }
-.toast.err { border-left-color: var(--red); }
-
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-</style>
-</head>
-<body>
-
-<header>
-  <div class="logo">XML<em> → </em>XLS<em> //</em> Extractor</div>
-  <div class="subtitle">Generic field extractor · any depth · any schema</div>
-</header>
-
-<main>
-  <!-- LEFT PANEL -->
-  <div class="left-panel">
-
-    <!-- Upload -->
-    <div class="panel-section">
-      <div class="section-label">01 / XML Datei</div>
-      <div class="dropzone" id="dropzone">
-        <input type="file" id="fileInput" accept=".xml,text/xml,application/xml">
-        <div class="dz-icon">⬡</div>
-        <div class="dz-text"><strong>XML hochladen</strong>Drag &amp; Drop oder klicken</div>
-      </div>
-      <div class="file-bar" id="fileBar">
-        <div class="file-dot"></div>
-        <span class="file-name" id="fileName"></span>
-        <span class="file-size" id="fileSize"></span>
-      </div>
-      <div class="progress-wrap" id="progressWrap">
-        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-        <div class="progress-label" id="progressLabel">Analysiere…</div>
-      </div>
-    </div>
-
-    <!-- Field selector -->
-    <div class="panel-section grow">
-      <div class="section-label">02 / Felder auswählen</div>
-      <div class="tree-controls">
-        <button class="tbtn" id="btnAll"    onclick="selectAll()">Alle</button>
-        <button class="tbtn"    id="btnNone" onclick="selectNone()">Keine</button>
-        <button class="tbtn on" id="btnFlat" onclick="setView('flat')">Flat</button>
-        <button class="tbtn"    id="btnSort" onclick="setView('az')">A–Z</button>
-      </div>
-      <input class="search-inp" id="searchInp" type="text" placeholder="Felder filtern…" oninput="onSearch(this.value)">
-      <div class="field-scroll" id="fieldList">
-        <div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- RIGHT PANEL -->
-  <div class="right-panel">
-    <div class="right-header">
-      <div class="preview-title">Vorschau</div>
-      <div class="preview-stats" id="previewStats">—</div>
-    </div>
-    <div class="table-wrap" id="tableWrap">
-      <div class="preview-empty">
-        <div class="icon">⬡</div>
-        <div>Felder auswählen für Vorschau</div>
-      </div>
-    </div>
-  </div>
-</main>
-
-<footer>
-  <div class="footer-info" id="footerInfo">Kein Dokument geladen</div>
-  <button class="export-btn" id="exportBtn" disabled onclick="doExport()">
-    ↓ Excel exportieren
-  </button>
-</footer>
-
-<div class="toast" id="toast"></div>
-
-<script>
-// =============================================================================
-// STATE
-// =============================================================================
-var S = {
-  fields:   [],          // [{path, leaf, isAttr, count}]
-  selected: new Set(),   // selected field paths
-  rows:     [],          // [{path: value, ...}]
-  view:     'flat',      // 'flat' | 'az'
-  query:    '',
-  fileName: '',
-  rowCount: 0
-};
-
-// =============================================================================
-// INDEXEDDB  (persist across reloads)
-// =============================================================================
-function dbOpen() {
-  return new Promise(function(resolve, reject) {
-    var r = indexedDB.open('xmlex3', 1);
-    r.onupgradeneeded = function(e) { e.target.result.createObjectStore('kv'); };
-    r.onsuccess      = function(e) { resolve(e.target.result); };
-    r.onerror        = function()  { reject(r.error); };
-  });
-}
-function dbWrite(key, val) {
-  dbOpen().then(function(db) {
-    var tx = db.transaction('kv', 'readwrite');
-    tx.objectStore('kv').put(val, key);
-  }).catch(function(e) { console.warn('db write', e); });
-}
-function dbRead(key) {
-  return dbOpen().then(function(db) {
-    return new Promise(function(resolve, reject) {
-      var tx = db.transaction('kv', 'readonly');
-      var r  = tx.objectStore('kv').get(key);
-      r.onsuccess = function() { resolve(r.result); };
-      r.onerror   = function() { reject(r.error); };
-    });
-  }).catch(function() { return null; });
-}
-function saveState() {
-  dbWrite('state', {
-    fields:   S.fields,
-    selected: Array.from(S.selected),
-    rows:     S.rows,
-    view:     S.view,
-    fileName: S.fileName,
-    rowCount: S.rowCount
-  });
-}
-
-// =============================================================================
-// STARTUP  —  restore saved state
-// =============================================================================
-dbRead('state').then(function(saved) {
-  if (!saved || !saved.rows || saved.rows.length === 0) return;
-  S.fields   = saved.fields   || [];
-  S.selected = new Set(saved.selected || []);
-  S.rows     = saved.rows     || [];
-  S.view     = saved.view     || 'flat';
-  S.fileName = saved.fileName || '';
-  S.rowCount = saved.rowCount || 0;
-
-  byId('fileBar').classList.add('show');
-  byId('fileName').textContent = S.fileName + '.xml';
-  byId('fileSize').textContent = S.rowCount + ' Datensätze (gecacht)';
-  setFooter();
-  syncButtons();
-  renderList();
-  renderTable();
-  toast('Letzter Stand wiederhergestellt');
-});
-
-// =============================================================================
-// FILE HANDLING
-// =============================================================================
-var dz = byId('dropzone');
-byId('fileInput').addEventListener('change', function(e) {
-  if (e.target.files[0]) loadFile(e.target.files[0]);
-});
-dz.addEventListener('dragover',  function(e) { e.preventDefault(); dz.classList.add('over'); });
-dz.addEventListener('dragleave', function()  { dz.classList.remove('over'); });
-dz.addEventListener('drop',      function(e) {
-  e.preventDefault();
-  dz.classList.remove('over');
-  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
-});
-
-function loadFile(file) {
-  S.fileName = file.name.replace(/\.xml$/i, '');
-  byId('fileBar').classList.add('show');
-  byId('fileName').textContent = file.name;
-  byId('fileSize').textContent = fmtBytes(file.size);
-  showProgress(0, 'Lese Datei…');
-  var reader = new FileReader();
-  reader.onload = function(e) { parseXML(e.target.result); };
-  reader.readAsText(file);
-}
-
-function fmtBytes(n) {
-  if (n < 1024)     return n + ' B';
-  if (n < 1048576)  return (n/1024).toFixed(1)    + ' KB';
-  return                   (n/1048576).toFixed(1)  + ' MB';
-}
-
-// =============================================================================
-// XML PARSER
-// =============================================================================
-function parseXML(text) {
-  showProgress(10, 'Parse XML…');
-
-  // --- sanitize common XML issues before parsing ---
-  // 1. unescaped & not part of a valid entity
-  text = text.replace(/&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)/g, '&amp;');
-
-  // 2. Try strict XML parse first, fall back to HTML parse if it fails
-  var doc = null;
-  var parseErr = null;
-
-  // Attempt 1: strict XML (preserves namespaces, fastest)
-  try {
-    var d1 = (new DOMParser()).parseFromString(text, 'text/xml');
-    var perr = d1.querySelector('parsererror');
-    if (perr) {
-      parseErr = perr.textContent.trim().slice(0, 200);
-    } else {
-      doc = d1;
-    }
-  } catch(ex) {
-    parseErr = ex.message;
-  }
-
-  // Attempt 2: wrap in <html> and parse as HTML (much more forgiving)
-  if (!doc) {
-    try {
-      var wrapped = '<!DOCTYPE html><html><body>' + text + '</body></html>';
-      var d2 = (new DOMParser()).parseFromString(wrapped, 'text/html');
-      // Find the root element (first non-body element child)
-      var body = d2.querySelector('body');
-      if (body && body.children.length > 0) {
-        doc = d2;
-        // Repoint documentElement logic to body.children[0] below
-        doc._xmlRoot = body.children[0];
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-    } catch(ex2) { /* ignore */ }
-  }
 
-  if (!doc) {
-    hideProgress();
-    toast('XML kann nicht gelesen werden: ' + (parseErr || 'Unbekannter Fehler'), true);
-    return;
-  }
-
-  // Helper: get the real root (XML root or fallback HTML body child)
-  function getRoot() {
-    return doc._xmlRoot || doc.documentElement;
-  }
-
-  showProgress(25, 'Erkunde Struktur…');
-
-  // --- find row anchor (most repeated element at any depth) ---
-  var depthCount = {};
-  scanDepths(getRoot(), 0, depthCount);
-
-  var bestKey = '', bestN = 0;
-  Object.keys(depthCount).forEach(function(k) {
-    if (depthCount[k] > bestN) { bestN = depthCount[k]; bestKey = k; }
-  });
-  var rowTag = bestKey ? bestKey.split('@')[0] : getRoot().localName;
-  var rowEls = Array.from(getRoot().getElementsByTagNameNS('*', rowTag));
-
-  showProgress(40, rowEls.length + ' Datensätze…');
-
-  // --- detect key/value patterns (e.g. TYPE+VALUE pairs) ---
-  var kvMap = {};
-  if (rowEls.length > 0) detectKV(rowEls[0], kvMap);
-
-  showProgress(55, 'Extrahiere Felder…');
-
-  // --- extract rows ---
-  var rows = [];
-  for (var i = 0; i < rowEls.length; i++) {
-    rows.push(extractRow(rowEls[i], kvMap));
-  }
-
-  showProgress(80, 'Baue Feldliste…');
-
-  // --- build ordered field list ---
-  var countMap = {}, orderMap = {}, idx = 0;
-  for (var ri = 0; ri < rows.length; ri++) {
-    var keys = Object.keys(rows[ri]);
-    for (var ki = 0; ki < keys.length; ki++) {
-      var k = keys[ki];
-      if (orderMap[k] === undefined) orderMap[k] = idx++;
-      if (rows[ri][k] !== '') countMap[k] = (countMap[k] || 0) + 1;
-      else if (countMap[k] === undefined) countMap[k] = 0;
-    }
-  }
-
-  var fields = Object.keys(countMap).sort(function(a,b) {
-    return (orderMap[a]||0) - (orderMap[b]||0);
-  }).map(function(path) {
-    var parts = path.split('/');
-    var leaf  = parts[parts.length-1];
-    var isAttr = leaf.charAt(0) === '@';
-    return { path: path, leaf: isAttr ? leaf.slice(1) : leaf, isAttr: isAttr, count: countMap[path] };
-  });
-
-  // --- update state ---
-  S.fields   = fields;
-  S.selected = new Set();
-  S.rows     = rows;
-  S.rowCount = rows.length;
-
-  showProgress(100, 'Fertig!');
-  setTimeout(hideProgress, 700);
-
-  setFooter();
-  syncButtons();
-  renderList();
-  renderTable();
-  byId('exportBtn').disabled = true;
-  toast(S.rowCount + ' Datensätze, ' + S.fields.length + ' Felder erkannt');
-  saveState();
-}
-
-// depth-count helper
-function scanDepths(node, depth, map) {
-  if (node.nodeType !== 1) return;
-  var k = node.localName + '@' + depth;
-  map[k] = (map[k] || 0) + 1;
-  for (var i = 0; i < node.children.length; i++) {
-    scanDepths(node.children[i], depth+1, map);
-  }
-}
-
-// detect KV pattern: sibling elements that have 2+ children
-// where the first child is a discriminating key (different values across siblings)
-function detectKV(node, kvMap) {
-  if (node.nodeType !== 1) return;
-  var grouped = groupChildren(node);
-  var tags = Object.keys(grouped);
-  for (var ti = 0; ti < tags.length; ti++) {
-    var tag  = tags[ti];
-    var sibs = grouped[tag];
-    if (sibs.length >= 2 && sibs[0].children.length >= 2) {
-      var keyTag = sibs[0].children[0].localName;
-      var valTag = sibs[0].children[1].localName;
-      var uniq   = new Set();
-      for (var si = 0; si < sibs.length; si++) {
-        var kEl = sibs[si].getElementsByTagNameNS('*', keyTag)[0];
-        if (kEl) uniq.add(kEl.textContent.trim());
+      :root {
+        --bg: #f5f5f3;
+        --surface: #ffffff;
+        --surface2: #f0f0ee;
+        --border: #ddddd9;
+        --border-hi: #c0c0bc;
+        --blue: #2563eb;
+        --text: #1a1a1a;
+        --muted: #8a8a85;
+        --red: #dc2626;
+        --mono: "IBM Plex Mono", monospace;
+        --sans: "IBM Plex Sans", sans-serif;
       }
-      if (uniq.size > 1) kvMap[tag] = { keyTag: keyTag, valTag: valTag };
-    }
-    detectKV(sibs[0], kvMap);
-  }
-}
 
-function groupChildren(node) {
-  var g = {};
-  for (var i = 0; i < node.children.length; i++) {
-    var t = node.children[i].localName;
-    if (!g[t]) g[t] = [];
-    g[t].push(node.children[i]);
-  }
-  return g;
-}
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 14px;
+        height: 100vh;
+        display: grid;
+        grid-template-rows: 57px 1fr 41px;
+        overflow: hidden;
+      }
 
-function extractRow(rowEl, kvMap) {
-  var row = {};
-  walkNode(rowEl, '', row, kvMap);
-  return row;
-}
+      /* HEADER */
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 0 32px;
+        display: flex;
+        align-items: center;
+        background: var(--surface);
+        flex-shrink: 0;
+      }
+      .logo {
+        font-family: var(--mono);
+        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .logo em {
+        color: var(--muted);
+        font-style: normal;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 12px;
+        font-family: var(--mono);
+        margin-left: 16px;
+      }
 
-function walkNode(node, path, row, kvMap) {
-  if (node.nodeType !== 1) return;
-  var tag     = node.localName.toUpperCase();
-  var curPath = path ? path + '/' + tag : tag;
+      /* MAIN */
+      main {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        overflow: hidden;
+      }
 
-  // XML attributes (skip namespace declarations)
-  for (var ai = 0; ai < node.attributes.length; ai++) {
-    var a = node.attributes[ai];
-    if (a.name.indexOf(':') === -1) {
-      row[curPath + '/@' + a.name.toUpperCase()] = a.value;
-    }
-  }
+      /* LEFT */
+      .left-panel {
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .panel-section {
+        border-bottom: 1px solid var(--border);
+        padding: 18px 20px;
+        flex-shrink: 0;
+      }
+      .panel-section.grow {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        border-bottom: none;
+      }
+      .section-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
 
-  // Leaf node
-  if (node.children.length === 0) {
-    row[curPath] = node.textContent.trim();
-    return;
-  }
+      /* DROPZONE */
+      .dropzone {
+        border: 1px dashed var(--border-hi);
+        background: var(--surface2);
+        border-radius: 4px;
+        padding: 22px 16px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+      .dropzone:hover,
+      .dropzone.over {
+        border-color: var(--blue);
+        background: rgba(37, 99, 235, 0.03);
+      }
+      .dropzone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+      }
+      .dz-icon {
+        font-size: 24px;
+      }
+      .dz-text {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 6px;
+        line-height: 1.5;
+      }
+      .dz-text strong {
+        display: block;
+        color: var(--text);
+        font-size: 13px;
+      }
 
-  var grouped = groupChildren(node);
-  var childTags = Object.keys(grouped);
+      /* FILE INFO */
+      .file-bar {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 10px 14px;
+        font-family: var(--mono);
+        font-size: 11px;
+        margin-top: 10px;
+      }
+      .file-bar.show {
+        display: flex;
+      }
+      .file-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--blue);
+        flex-shrink: 0;
+      }
+      .file-name {
+        color: var(--blue);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+      .file-size {
+        color: var(--muted);
+        flex-shrink: 0;
+      }
 
-  for (var cti = 0; cti < childTags.length; cti++) {
-    var childTag = childTags[cti];
-    var sibs     = grouped[childTag];
-    var childTagUC = childTag.toUpperCase();
+      /* PROGRESS */
+      .progress-wrap {
+        display: none;
+        margin-top: 10px;
+      }
+      .progress-wrap.show {
+        display: block;
+      }
+      .progress-track {
+        height: 2px;
+        background: var(--border);
+        border-radius: 1px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--blue);
+        width: 0;
+        transition: width 0.2s;
+      }
+      .progress-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 5px;
+      }
 
-    if (sibs.length >= 2 && kvMap[childTag]) {
-      // KV pivot: each sibling becomes a named column
-      var kv = kvMap[childTag];
-      for (var si = 0; si < sibs.length; si++) {
-        var sib  = sibs[si];
-        var kEl  = sib.getElementsByTagNameNS('*', kv.keyTag)[0];
-        var vEl  = sib.getElementsByTagNameNS('*', kv.valTag)[0];
-        if (!kEl) continue;
-        var keyName = kEl.textContent.trim().replace(/[\/\\?*\[\]:]/g, '_');
-        var colPath = curPath + '/' + childTagUC + '[' + keyName + ']';
-        row[colPath] = vEl ? vEl.textContent.trim() : '';
-        // walk any extra children in this sibling
-        for (var sci = 0; sci < sib.children.length; sci++) {
-          var sc = sib.children[sci];
-          if (sc.localName.toUpperCase() !== kv.keyTag.toUpperCase() &&
-              sc.localName.toUpperCase() !== kv.valTag.toUpperCase()) {
-            walkNode(sc, curPath + '/' + childTagUC + '[' + keyName + ']', row, kvMap);
+      /* TREE CONTROLS */
+      .tree-controls {
+        display: flex;
+        gap: 5px;
+        flex-shrink: 0;
+        margin-bottom: 8px;
+      }
+      .tbtn {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.1s;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .tbtn:hover {
+        color: var(--text);
+        border-color: var(--border-hi);
+      }
+      .tbtn.on {
+        color: var(--blue);
+        border-color: var(--blue);
+        background: rgba(37, 99, 235, 0.06);
+      }
+
+      /* SEARCH */
+      .search-inp {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 7px 10px;
+        border-radius: 3px;
+        outline: none;
+        margin-bottom: 8px;
+        flex-shrink: 0;
+        transition: border-color 0.15s;
+      }
+      .search-inp:focus {
+        border-color: var(--blue);
+      }
+      .search-inp::placeholder {
+        color: var(--muted);
+      }
+
+      /* FIELD LIST */
+      .field-scroll {
+        flex: 1;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .empty-msg {
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+        padding: 32px 16px;
+        line-height: 1.8;
+        font-family: var(--mono);
+      }
+      .fitem {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: background 0.08s;
+        user-select: none;
+      }
+      .fitem:hover {
+        background: var(--surface2);
+      }
+      .fitem.sel {
+        background: rgba(37, 99, 235, 0.06);
+      }
+      .fcheck {
+        width: 14px;
+        height: 14px;
+        border: 1px solid var(--border-hi);
+        border-radius: 2px;
+        flex-shrink: 0;
+        position: relative;
+        transition: all 0.1s;
+      }
+      .fitem.sel .fcheck {
+        background: var(--blue);
+        border-color: var(--blue);
+      }
+      .fitem.sel .fcheck::after {
+        content: "";
+        position: absolute;
+        left: 3px;
+        top: 1px;
+        width: 6px;
+        height: 9px;
+        border: 1.5px solid #fff;
+        border-top: none;
+        border-left: none;
+        transform: rotate(45deg);
+      }
+      .fpath {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .fpath .fleaf {
+        color: var(--text);
+      }
+      .fpath .fleaf.attr {
+        color: var(--blue);
+      }
+      .fcount {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--border-hi);
+        flex-shrink: 0;
+      }
+
+      /* RIGHT */
+      .right-panel {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .right-header {
+        border-bottom: 1px solid var(--border);
+        padding: 0 24px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--surface);
+        flex-shrink: 0;
+      }
+      .preview-title {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .preview-stats {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .preview-stats b {
+        color: var(--blue);
+        font-weight: normal;
+      }
+      .table-wrap {
+        flex: 1;
+        overflow: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .preview-empty {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+        gap: 12px;
+      }
+      .preview-empty .icon {
+        font-size: 36px;
+        opacity: 0.25;
+      }
+
+      /* TABLE */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-hi);
+        padding: 9px 14px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        z-index: 10;
+      }
+      .th-x {
+        display: inline-block;
+        margin-left: 8px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: normal;
+      }
+      .th-x:hover {
+        color: var(--red);
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+      }
+      tbody tr:hover {
+        background: var(--surface2);
+      }
+      tbody td {
+        padding: 7px 14px;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      tbody td.nil {
+        color: var(--border-hi);
+      }
+
+      /* FOOTER */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--surface);
+        flex-shrink: 0;
+      }
+      .footer-info {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .footer-info b {
+        color: var(--blue);
+        font-weight: normal;
+      }
+      .export-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--text);
+        color: #fff;
+        border: none;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 8px 20px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+      }
+      .export-btn:hover {
+        background: #333;
+        transform: translateY(-1px);
+      }
+      .export-btn:active {
+        transform: none;
+      }
+      .export-btn:disabled {
+        background: var(--border);
+        color: var(--muted);
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* TOAST */
+      .toast {
+        position: fixed;
+        bottom: 56px;
+        right: 24px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--blue);
+        border-radius: 4px;
+        padding: 11px 16px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text);
+        z-index: 999;
+        max-width: 320px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        transform: translateX(140%);
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .toast.show {
+        transform: translateX(0);
+      }
+      .toast.err {
+        border-left-color: var(--red);
+      }
+
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">XML<em> → </em>XLS<em> //</em> Extractor</div>
+      <div class="subtitle">
+        Generic field extractor · any depth · any schema
+      </div>
+    </header>
+
+    <main>
+      <!-- LEFT PANEL -->
+      <div class="left-panel">
+        <!-- Upload -->
+        <div class="panel-section">
+          <div class="section-label">01 / XML Datei</div>
+          <div class="dropzone" id="dropzone">
+            <input
+              type="file"
+              id="fileInput"
+              accept=".xml,text/xml,application/xml"
+            />
+            <div class="dz-icon">⬡</div>
+            <div class="dz-text">
+              <strong>XML hochladen</strong>Drag &amp; Drop oder klicken
+            </div>
+          </div>
+          <div class="file-bar" id="fileBar">
+            <div class="file-dot"></div>
+            <span class="file-name" id="fileName"></span>
+            <span class="file-size" id="fileSize"></span>
+          </div>
+          <div class="progress-wrap" id="progressWrap">
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-label" id="progressLabel">Analysiere…</div>
+          </div>
+        </div>
+
+        <!-- Field selector -->
+        <div class="panel-section grow">
+          <div class="section-label">02 / Felder auswählen</div>
+          <div class="tree-controls">
+            <button class="tbtn" id="btnAll" onclick="selectAll()">Alle</button>
+            <button class="tbtn" id="btnNone" onclick="selectNone()">
+              Keine
+            </button>
+            <button class="tbtn on" id="btnFlat" onclick="setView('flat')">
+              Flat
+            </button>
+            <button class="tbtn" id="btnSort" onclick="setView('az')">
+              A–Z
+            </button>
+          </div>
+          <input
+            class="search-inp"
+            id="searchInp"
+            type="text"
+            placeholder="Felder filtern…"
+            oninput="onSearch(this.value)"
+          />
+          <div class="field-scroll" id="fieldList">
+            <div class="empty-msg">
+              ← XML hochladen<br />um Felder zu erkunden
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="right-panel">
+        <div class="right-header">
+          <div class="preview-title">Vorschau</div>
+          <div class="preview-stats" id="previewStats">—</div>
+        </div>
+        <div class="table-wrap" id="tableWrap">
+          <div class="preview-empty">
+            <div class="icon">⬡</div>
+            <div>Felder auswählen für Vorschau</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-info" id="footerInfo">Kein Dokument geladen</div>
+      <button class="export-btn" id="exportBtn" disabled onclick="doExport()">
+        ↓ Excel exportieren
+      </button>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // =============================================================================
+      // STATE
+      // =============================================================================
+      var S = {
+        fields: [], // [{path, leaf, isAttr, count}]
+        selected: new Set(), // selected field paths
+        rows: [], // [{path: value, ...}]
+        view: "flat", // 'flat' | 'az'
+        query: "",
+        fileName: "",
+        rowCount: 0,
+      };
+
+      // =============================================================================
+      // INDEXEDDB  (persist across reloads)
+      // =============================================================================
+      function dbOpen() {
+        return new Promise(function (resolve, reject) {
+          var r = indexedDB.open("xmlex3", 1);
+          r.onupgradeneeded = function (e) {
+            e.target.result.createObjectStore("kv");
+          };
+          r.onsuccess = function (e) {
+            resolve(e.target.result);
+          };
+          r.onerror = function () {
+            reject(r.error);
+          };
+        });
+      }
+      function dbWrite(key, val) {
+        dbOpen()
+          .then(function (db) {
+            var tx = db.transaction("kv", "readwrite");
+            tx.objectStore("kv").put(val, key);
+          })
+          .catch(function (e) {
+            console.warn("db write", e);
+          });
+      }
+      function dbRead(key) {
+        return dbOpen()
+          .then(function (db) {
+            return new Promise(function (resolve, reject) {
+              var tx = db.transaction("kv", "readonly");
+              var r = tx.objectStore("kv").get(key);
+              r.onsuccess = function () {
+                resolve(r.result);
+              };
+              r.onerror = function () {
+                reject(r.error);
+              };
+            });
+          })
+          .catch(function () {
+            return null;
+          });
+      }
+      function saveState() {
+        dbWrite("state", {
+          fields: S.fields,
+          selected: Array.from(S.selected),
+          rows: S.rows,
+          view: S.view,
+          fileName: S.fileName,
+          rowCount: S.rowCount,
+        });
+      }
+
+      // =============================================================================
+      // STARTUP  —  restore saved state
+      // =============================================================================
+      dbRead("state").then(function (saved) {
+        if (!saved || !saved.rows || saved.rows.length === 0) return;
+        S.fields = saved.fields || [];
+        S.selected = new Set(saved.selected || []);
+        S.rows = saved.rows || [];
+        S.view = saved.view || "flat";
+        S.fileName = saved.fileName || "";
+        S.rowCount = saved.rowCount || 0;
+
+        byId("fileBar").classList.add("show");
+        byId("fileName").textContent = S.fileName + ".xml";
+        byId("fileSize").textContent = S.rowCount + " Datensätze (gecacht)";
+        setFooter();
+        syncButtons();
+        renderList();
+        renderTable();
+        toast("Letzter Stand wiederhergestellt");
+      });
+
+      // =============================================================================
+      // FILE HANDLING
+      // =============================================================================
+      var dz = byId("dropzone");
+      byId("fileInput").addEventListener("change", function (e) {
+        if (e.target.files[0]) loadFile(e.target.files[0]);
+      });
+      dz.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        dz.classList.add("over");
+      });
+      dz.addEventListener("dragleave", function () {
+        dz.classList.remove("over");
+      });
+      dz.addEventListener("drop", function (e) {
+        e.preventDefault();
+        dz.classList.remove("over");
+        if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+      });
+
+      function loadFile(file) {
+        S.fileName = file.name.replace(/\.xml$/i, "");
+        byId("fileBar").classList.add("show");
+        byId("fileName").textContent = file.name;
+        byId("fileSize").textContent = fmtBytes(file.size);
+        showProgress(0, "Lese Datei…");
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          parseXML(e.target.result);
+        };
+        reader.readAsText(file);
+      }
+
+      function fmtBytes(n) {
+        if (n < 1024) return n + " B";
+        if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+        return (n / 1048576).toFixed(1) + " MB";
+      }
+
+      // =============================================================================
+      // XML PARSER
+      // =============================================================================
+      function parseXML(text) {
+        showProgress(10, "Parse XML…");
+
+        // --- sanitize common XML issues before parsing ---
+        // 1. unescaped & not part of a valid entity
+        text = text.replace(
+          /&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)/g,
+          "&amp;",
+        );
+
+        // 2. Try strict XML parse first, fall back to HTML parse if it fails
+        var doc = null;
+        var parseErr = null;
+
+        // Attempt 1: strict XML (preserves namespaces, fastest)
+        try {
+          var d1 = new DOMParser().parseFromString(text, "text/xml");
+          var perr = d1.querySelector("parsererror");
+          if (perr) {
+            parseErr = perr.textContent.trim().slice(0, 200);
+          } else {
+            doc = d1;
+          }
+        } catch (ex) {
+          parseErr = ex.message;
+        }
+
+        // Attempt 2: wrap in <html> and parse as HTML (much more forgiving)
+        if (!doc) {
+          try {
+            var wrapped =
+              "<!DOCTYPE html><html><body>" + text + "</body></html>";
+            var d2 = new DOMParser().parseFromString(wrapped, "text/html");
+            // Find the root element (first non-body element child)
+            var body = d2.querySelector("body");
+            if (body && body.children.length > 0) {
+              doc = d2;
+              // Repoint documentElement logic to body.children[0] below
+              doc._xmlRoot = body.children[0];
+            }
+          } catch (ex2) {
+            /* ignore */
+          }
+        }
+
+        if (!doc) {
+          hideProgress();
+          toast(
+            "XML kann nicht gelesen werden: " +
+              (parseErr || "Unbekannter Fehler"),
+            true,
+          );
+          return;
+        }
+
+        // Helper: get the real root (XML root or fallback HTML body child)
+        function getRoot() {
+          return doc._xmlRoot || doc.documentElement;
+        }
+
+        showProgress(25, "Erkunde Struktur…");
+
+        // --- find row anchor (most repeated element at any depth) ---
+        var depthCount = {};
+        scanDepths(getRoot(), 0, depthCount);
+
+        var bestKey = "",
+          bestN = 0;
+        Object.keys(depthCount).forEach(function (k) {
+          if (depthCount[k] > bestN) {
+            bestN = depthCount[k];
+            bestKey = k;
+          }
+        });
+        var rowTag = bestKey ? bestKey.split("@")[0] : getRoot().localName;
+        var rowEls = Array.from(getRoot().getElementsByTagNameNS("*", rowTag));
+
+        showProgress(40, rowEls.length + " Datensätze…");
+
+        // --- detect key/value patterns (e.g. TYPE+VALUE pairs) ---
+        var kvMap = {};
+        if (rowEls.length > 0) detectKV(rowEls[0], kvMap);
+
+        showProgress(55, "Extrahiere Felder…");
+
+        // --- extract rows ---
+        var rows = [];
+        for (var i = 0; i < rowEls.length; i++) {
+          rows.push(extractRow(rowEls[i], kvMap));
+        }
+
+        showProgress(80, "Baue Feldliste…");
+
+        // --- build ordered field list ---
+        var countMap = {},
+          orderMap = {},
+          idx = 0;
+        for (var ri = 0; ri < rows.length; ri++) {
+          var keys = Object.keys(rows[ri]);
+          for (var ki = 0; ki < keys.length; ki++) {
+            var k = keys[ki];
+            if (orderMap[k] === undefined) orderMap[k] = idx++;
+            if (rows[ri][k] !== "") countMap[k] = (countMap[k] || 0) + 1;
+            else if (countMap[k] === undefined) countMap[k] = 0;
+          }
+        }
+
+        var fields = Object.keys(countMap)
+          .sort(function (a, b) {
+            return (orderMap[a] || 0) - (orderMap[b] || 0);
+          })
+          .map(function (path) {
+            var parts = path.split("/");
+            var leaf = parts[parts.length - 1];
+            var isAttr = leaf.charAt(0) === "@";
+            return {
+              path: path,
+              leaf: isAttr ? leaf.slice(1) : leaf,
+              isAttr: isAttr,
+              count: countMap[path],
+            };
+          });
+
+        // --- update state ---
+        S.fields = fields;
+        S.selected = new Set();
+        S.rows = rows;
+        S.rowCount = rows.length;
+
+        showProgress(100, "Fertig!");
+        setTimeout(hideProgress, 700);
+
+        setFooter();
+        syncButtons();
+        renderList();
+        renderTable();
+        byId("exportBtn").disabled = true;
+        toast(
+          S.rowCount + " Datensätze, " + S.fields.length + " Felder erkannt",
+        );
+        saveState();
+      }
+
+      // depth-count helper
+      function scanDepths(node, depth, map) {
+        if (node.nodeType !== 1) return;
+        var k = node.localName + "@" + depth;
+        map[k] = (map[k] || 0) + 1;
+        for (var i = 0; i < node.children.length; i++) {
+          scanDepths(node.children[i], depth + 1, map);
+        }
+      }
+
+      // detect KV pattern: sibling elements that have 2+ children
+      // where the first child is a discriminating key (different values across siblings)
+      function detectKV(node, kvMap) {
+        if (node.nodeType !== 1) return;
+        var grouped = groupChildren(node);
+        var tags = Object.keys(grouped);
+        for (var ti = 0; ti < tags.length; ti++) {
+          var tag = tags[ti];
+          var sibs = grouped[tag];
+          if (sibs.length >= 2 && sibs[0].children.length >= 2) {
+            var keyTag = sibs[0].children[0].localName;
+            var valTag = sibs[0].children[1].localName;
+            var uniq = new Set();
+            for (var si = 0; si < sibs.length; si++) {
+              var kEl = sibs[si].getElementsByTagNameNS("*", keyTag)[0];
+              if (kEl) uniq.add(kEl.textContent.trim());
+            }
+            if (uniq.size > 1) kvMap[tag] = { keyTag: keyTag, valTag: valTag };
+          }
+          detectKV(sibs[0], kvMap);
+        }
+      }
+
+      function groupChildren(node) {
+        var g = {};
+        for (var i = 0; i < node.children.length; i++) {
+          var t = node.children[i].localName;
+          if (!g[t]) g[t] = [];
+          g[t].push(node.children[i]);
+        }
+        return g;
+      }
+
+      function extractRow(rowEl, kvMap) {
+        var row = {};
+        walkNode(rowEl, "", row, kvMap);
+        return row;
+      }
+
+      function walkNode(node, path, row, kvMap) {
+        if (node.nodeType !== 1) return;
+        var tag = node.localName.toUpperCase();
+        var curPath = path ? path + "/" + tag : tag;
+
+        // XML attributes (skip namespace declarations)
+        for (var ai = 0; ai < node.attributes.length; ai++) {
+          var a = node.attributes[ai];
+          if (a.name.indexOf(":") === -1) {
+            row[curPath + "/@" + a.name.toUpperCase()] = a.value;
+          }
+        }
+
+        // Leaf node
+        if (node.children.length === 0) {
+          row[curPath] = node.textContent.trim();
+          return;
+        }
+
+        var grouped = groupChildren(node);
+        var childTags = Object.keys(grouped);
+
+        for (var cti = 0; cti < childTags.length; cti++) {
+          var childTag = childTags[cti];
+          var sibs = grouped[childTag];
+          var childTagUC = childTag.toUpperCase();
+
+          if (sibs.length >= 2 && kvMap[childTag]) {
+            // KV pivot: each sibling becomes a named column
+            var kv = kvMap[childTag];
+            for (var si = 0; si < sibs.length; si++) {
+              var sib = sibs[si];
+              var kEl = sib.getElementsByTagNameNS("*", kv.keyTag)[0];
+              var vEl = sib.getElementsByTagNameNS("*", kv.valTag)[0];
+              if (!kEl) continue;
+              var keyName = kEl.textContent
+                .trim()
+                .replace(/[\/\\?*\[\]:]/g, "_");
+              var colPath = curPath + "/" + childTagUC + "[" + keyName + "]";
+              row[colPath] = vEl ? vEl.textContent.trim() : "";
+              // walk any extra children in this sibling
+              for (var sci = 0; sci < sib.children.length; sci++) {
+                var sc = sib.children[sci];
+                if (
+                  sc.localName.toUpperCase() !== kv.keyTag.toUpperCase() &&
+                  sc.localName.toUpperCase() !== kv.valTag.toUpperCase()
+                ) {
+                  walkNode(
+                    sc,
+                    curPath + "/" + childTagUC + "[" + keyName + "]",
+                    row,
+                    kvMap,
+                  );
+                }
+              }
+            }
+          } else if (sibs.length >= 2) {
+            // Indexed repeating elements
+            for (var ri = 0; ri < sibs.length; ri++) {
+              walkNode(
+                sibs[ri],
+                curPath + "/" + childTagUC + "[" + (ri + 1) + "]",
+                row,
+                kvMap,
+              );
+            }
+          } else {
+            walkNode(sibs[0], curPath, row, kvMap);
           }
         }
       }
-    } else if (sibs.length >= 2) {
-      // Indexed repeating elements
-      for (var ri = 0; ri < sibs.length; ri++) {
-        walkNode(sibs[ri], curPath + '/' + childTagUC + '[' + (ri+1) + ']', row, kvMap);
+
+      // =============================================================================
+      // FIELD LIST
+      // =============================================================================
+      function renderList() {
+        var container = byId("fieldList");
+        if (S.fields.length === 0) {
+          container.innerHTML =
+            '<div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>';
+          return;
+        }
+
+        var list = S.fields.slice();
+
+        if (S.query) {
+          var q = S.query.toLowerCase();
+          list = list.filter(function (f) {
+            return f.path.toLowerCase().indexOf(q) !== -1;
+          });
+        }
+        if (S.view === "az") {
+          list.sort(function (a, b) {
+            return a.path.localeCompare(b.path);
+          });
+        }
+
+        if (list.length === 0) {
+          container.innerHTML = '<div class="empty-msg">Keine Treffer</div>';
+          return;
+        }
+
+        var html = "";
+        for (var i = 0; i < list.length; i++) {
+          var f = list[i];
+          var sel = S.selected.has(f.path);
+
+          // Build path display: grey prefix, colored leaf
+          var kvM = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
+          var pre, lf;
+          if (kvM) {
+            pre = kvM[1].replace(/\/$/, "");
+            lf = kvM[2];
+          } else {
+            var parts = f.path.split("/");
+            pre = parts.slice(0, -1).join("/");
+            lf = parts[parts.length - 1];
+          }
+          var leafCls = f.isAttr ? "fleaf attr" : "fleaf";
+          var display = pre
+            ? '<span style="color:var(--muted)">' +
+              he(pre) +
+              '/</span><span class="' +
+              leafCls +
+              '">' +
+              he(lf) +
+              "</span>"
+            : '<span class="' + leafCls + '">' + he(lf) + "</span>";
+
+          // Safe onclick: encode path into data attribute, use onclick index
+          html +=
+            '<div class="fitem' +
+            (sel ? " sel" : "") +
+            '" data-path="' +
+            he(f.path) +
+            '" onclick="toggleIdx(this)">';
+          html += '<div class="fcheck"></div>';
+          html +=
+            '<div class="fpath" title="' +
+            he(f.path) +
+            '">' +
+            display +
+            "</div>";
+          html += '<div class="fcount">' + f.count + "</div>";
+          html += "</div>";
+        }
+        container.innerHTML = html;
       }
-    } else {
-      walkNode(sibs[0], curPath, row, kvMap);
-    }
-  }
-}
 
-// =============================================================================
-// FIELD LIST
-// =============================================================================
-function renderList() {
-  var container = byId('fieldList');
-  if (S.fields.length === 0) {
-    container.innerHTML = '<div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>';
-    return;
-  }
-
-  var list = S.fields.slice();
-
-  if (S.query) {
-    var q = S.query.toLowerCase();
-    list = list.filter(function(f) {
-      return f.path.toLowerCase().indexOf(q) !== -1;
-    });
-  }
-  if (S.view === 'az') {
-    list.sort(function(a,b) { return a.path.localeCompare(b.path); });
-  }
-
-  if (list.length === 0) {
-    container.innerHTML = '<div class="empty-msg">Keine Treffer</div>';
-    return;
-  }
-
-  var html = '';
-  for (var i = 0; i < list.length; i++) {
-    var f    = list[i];
-    var sel  = S.selected.has(f.path);
-
-    // Build path display: grey prefix, colored leaf
-    var kvM  = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
-    var pre, lf;
-    if (kvM) {
-      pre = kvM[1].replace(/\/$/, '');
-      lf  = kvM[2];
-    } else {
-      var parts = f.path.split('/');
-      pre = parts.slice(0,-1).join('/');
-      lf  = parts[parts.length-1];
-    }
-    var leafCls = f.isAttr ? 'fleaf attr' : 'fleaf';
-    var display = pre
-      ? '<span style="color:var(--muted)">' + he(pre) + '/</span><span class="' + leafCls + '">' + he(lf) + '</span>'
-      : '<span class="' + leafCls + '">' + he(lf) + '</span>';
-
-    // Safe onclick: encode path into data attribute, use onclick index
-    html += '<div class="fitem' + (sel?' sel':'') + '" data-path="' + he(f.path) + '" onclick="toggleIdx(this)">';
-    html += '<div class="fcheck"></div>';
-    html += '<div class="fpath" title="' + he(f.path) + '">' + display + '</div>';
-    html += '<div class="fcount">' + f.count + '</div>';
-    html += '</div>';
-  }
-  container.innerHTML = html;
-}
-
-function toggleIdx(el) {
-  var path = el.getAttribute('data-path');
-  if (!path) return;
-  if (S.selected.has(path)) S.selected.delete(path);
-  else S.selected.add(path);
-  syncButtons();
-  renderList();
-  renderTable();
-  byId('exportBtn').disabled = S.selected.size === 0;
-  saveState();
-}
-
-function selectAll() {
-  for (var i = 0; i < S.fields.length; i++) S.selected.add(S.fields[i].path);
-  syncButtons();
-  renderList();
-  renderTable();
-  byId('exportBtn').disabled = S.selected.size === 0;
-  saveState();
-}
-
-function selectNone() {
-  S.selected.clear();
-  syncButtons();
-  renderList();
-  renderTable();
-  byId('exportBtn').disabled = true;
-  saveState();
-}
-
-function setView(v) {
-  S.view = v;
-  syncButtons();
-  renderList();
-  saveState();
-}
-
-function onSearch(q) {
-  S.query = q;
-  renderList();
-}
-
-function syncButtons() {
-  // count how many fields from S.fields are actually selected
-  var selCount = 0;
-  for (var i = 0; i < S.fields.length; i++) {
-    if (S.selected.has(S.fields[i].path)) selCount++;
-  }
-  var allSel  = S.fields.length > 0 && selCount === S.fields.length;
-  var noneSel = selCount === 0;
-  setBtnOn('btnAll',  allSel);
-  setBtnOn('btnNone', noneSel);
-  setBtnOn('btnFlat', S.view === 'flat');
-  setBtnOn('btnSort', S.view === 'az');
-}
-
-function setBtnOn(id, on) {
-  var el = byId(id);
-  if (on) el.classList.add('on');
-  else    el.classList.remove('on');
-}
-
-// =============================================================================
-// PREVIEW TABLE
-// =============================================================================
-var PREVIEW = 200;
-
-function renderTable() {
-  var wrap  = byId('tableWrap');
-  var stats = byId('previewStats');
-
-  if (S.selected.size === 0) {
-    wrap.innerHTML = '<div class="preview-empty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>';
-    stats.textContent = '—';
-    return;
-  }
-
-  var cols   = Array.from(S.selected);
-  var labels = cols.map(pathLabel);
-  var rows   = S.rows.slice(0, PREVIEW);
-
-  var th = '';
-  for (var ci = 0; ci < cols.length; ci++) {
-    th += '<th>' + he(labels[ci])
-      + '<span class="th-x" data-path="' + he(cols[ci]) + '" onclick="removeCol(this)" title="Entfernen">✕</span></th>';
-  }
-
-  var tb = '';
-  for (var ri = 0; ri < rows.length; ri++) {
-    tb += '<tr>';
-    for (var ci2 = 0; ci2 < cols.length; ci2++) {
-      var v = rows[ri][cols[ci2]];
-      if (v !== undefined && v !== '') {
-        tb += '<td title="' + he(v) + '">' + he(v) + '</td>';
-      } else {
-        tb += '<td class="nil">—</td>';
+      function toggleIdx(el) {
+        var path = el.getAttribute("data-path");
+        if (!path) return;
+        if (S.selected.has(path)) S.selected.delete(path);
+        else S.selected.add(path);
+        byId("exportBtn").disabled = S.selected.size === 0;
+        syncButtons();
+        renderList();
+        renderTable();
+        saveState();
       }
-    }
-    tb += '</tr>';
-  }
 
-  wrap.innerHTML = '<table><thead><tr>' + th + '</tr></thead><tbody>' + tb + '</tbody></table>';
+      function selectAll() {
+        for (var i = 0; i < S.fields.length; i++) {
+          S.selected.add(S.fields[i].path);
+        }
+        // directly mark Alle as active, Keine as inactive
+        byId("btnAll").className = "tbtn on";
+        byId("btnNone").className = "tbtn";
+        byId("exportBtn").disabled = false;
+        renderList();
+        renderTable();
+        saveState();
+      }
 
-  var total = S.rows.length;
-  stats.innerHTML = '<b>' + total + '</b> Zeilen · <b>' + cols.length + '</b> Spalten'
-    + (total > PREVIEW ? ' · Vorschau: ' + PREVIEW : '');
-}
+      function selectNone() {
+        S.selected.clear();
+        // directly mark Keine as active, Alle as inactive
+        byId("btnAll").className = "tbtn";
+        byId("btnNone").className = "tbtn on";
+        byId("exportBtn").disabled = true;
+        renderList();
+        renderTable();
+        saveState();
+      }
 
-function removeCol(el) {
-  var path = el.getAttribute('data-path');
-  S.selected.delete(path);
-  syncButtons();
-  renderList();
-  renderTable();
-  byId('exportBtn').disabled = S.selected.size === 0;
-  saveState();
-}
+      function setView(v) {
+        S.view = v;
+        syncButtons();
+        renderList();
+        saveState();
+      }
 
-// =============================================================================
-// EXPORT
-// =============================================================================
-function doExport() {
-  if (S.selected.size === 0 || S.rows.length === 0) return;
+      function onSearch(q) {
+        S.query = q;
+        renderList();
+      }
 
-  var cols   = Array.from(S.selected);
-  var labels = cols.map(pathLabel);
-  var data   = [labels];
+      function syncButtons() {
+        var selCount = 0;
+        for (var i = 0; i < S.fields.length; i++) {
+          if (S.selected.has(S.fields[i].path)) selCount++;
+        }
+        var hasData = S.fields.length > 0;
+        var allSel = hasData && selCount === S.fields.length;
+        var noneSel = !hasData || selCount === 0;
 
-  for (var ri = 0; ri < S.rows.length; ri++) {
-    var row = [];
-    for (var ci = 0; ci < cols.length; ci++) {
-      var v = S.rows[ri][cols[ci]];
-      row.push(v !== undefined ? v : '');
-    }
-    data.push(row);
-  }
+        // force direct className to avoid any toggle race
+        byId("btnAll").className = "tbtn" + (allSel ? " on" : "");
+        byId("btnNone").className = "tbtn" + (noneSel ? " on" : "");
+        byId("btnFlat").className = "tbtn" + (S.view === "flat" ? " on" : "");
+        byId("btnSort").className = "tbtn" + (S.view === "az" ? " on" : "");
+      }
 
-  var ws = XLSX.utils.aoa_to_sheet(data);
+      // =============================================================================
+      // PREVIEW TABLE
+      // =============================================================================
+      var PREVIEW = 200;
 
-  // header styling
-  var range = XLSX.utils.decode_range(ws['!ref']);
-  for (var c = range.s.c; c <= range.e.c; c++) {
-    var cell = ws[XLSX.utils.encode_cell({r:0, c:c})];
-    if (cell) cell.s = {
-      font: { bold:true, name:'Arial', sz:10 },
-      fill: { fgColor:{ rgb:'DBEAFE' }, patternType:'solid' },
-      alignment: { horizontal:'left' }
-    };
-  }
+      function renderTable() {
+        var wrap = byId("tableWrap");
+        var stats = byId("previewStats");
 
-  // column widths
-  ws['!cols'] = labels.map(function(lbl, ci) {
-    var max = lbl.length;
-    for (var ri = 0; ri < S.rows.length; ri++) {
-      var v = S.rows[ri][cols[ci]];
-      if (v && v.length > max) max = v.length;
-    }
-    return { wch: Math.min(max + 2, 50) };
-  });
+        if (S.selected.size === 0) {
+          wrap.innerHTML =
+            '<div class="preview-empty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>';
+          stats.textContent = "—";
+          return;
+        }
 
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Extraktion');
-  XLSX.writeFile(wb, (S.fileName || 'export') + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
-  toast(S.rows.length + ' Zeilen exportiert');
-}
+        var cols = Array.from(S.selected);
+        var labels = cols.map(pathLabel);
+        var rows = S.rows.slice(0, PREVIEW);
 
-// =============================================================================
-// UTILS
-// =============================================================================
-function byId(id) { return document.getElementById(id); }
+        var th = "";
+        for (var ci = 0; ci < cols.length; ci++) {
+          th +=
+            "<th>" +
+            he(labels[ci]) +
+            '<span class="th-x" data-path="' +
+            he(cols[ci]) +
+            '" onclick="removeCol(this)" title="Entfernen">✕</span></th>';
+        }
 
-function he(s) {
-  return String(s)
-    .replace(/&/g,  '&amp;')
-    .replace(/</g,  '&lt;')
-    .replace(/>/g,  '&gt;')
-    .replace(/"/g,  '&quot;')
-    .replace(/'/g, '&#39;');
-}
+        var tb = "";
+        for (var ri = 0; ri < rows.length; ri++) {
+          tb += "<tr>";
+          for (var ci2 = 0; ci2 < cols.length; ci2++) {
+            var v = rows[ri][cols[ci2]];
+            if (v !== undefined && v !== "") {
+              tb += '<td title="' + he(v) + '">' + he(v) + "</td>";
+            } else {
+              tb += '<td class="nil">—</td>';
+            }
+          }
+          tb += "</tr>";
+        }
 
-function pathLabel(path) {
-  var m = path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/);
-  if (m) return m[2] ? m[1] + ' / ' + m[2] : m[1];
-  return path.split('/').pop().replace('@','');
-}
+        wrap.innerHTML =
+          "<table><thead><tr>" +
+          th +
+          "</tr></thead><tbody>" +
+          tb +
+          "</tbody></table>";
 
-function showProgress(pct, label) {
-  byId('progressWrap').classList.add('show');
-  byId('progressFill').style.width = pct + '%';
-  byId('progressLabel').textContent = label;
-}
-function hideProgress() {
-  byId('progressWrap').classList.remove('show');
-}
+        var total = S.rows.length;
+        stats.innerHTML =
+          "<b>" +
+          total +
+          "</b> Zeilen · <b>" +
+          cols.length +
+          "</b> Spalten" +
+          (total > PREVIEW ? " · Vorschau: " + PREVIEW : "");
+      }
 
-function setFooter() {
-  byId('footerInfo').innerHTML =
-    '<b>' + S.rowCount + '</b> Datensätze · <b>' + S.fields.length + '</b> Felder erkannt';
-}
+      function removeCol(el) {
+        var path = el.getAttribute("data-path");
+        S.selected.delete(path);
+        byId("exportBtn").disabled = S.selected.size === 0;
+        syncButtons();
+        renderList();
+        renderTable();
+        saveState();
+      }
 
-var _toastTimer;
-function toast(msg, isErr) {
-  var el = byId('toast');
-  el.textContent = msg;
-  el.className = 'toast show' + (isErr ? ' err' : '');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3000);
-}
-</script>
-</body>
+      // =============================================================================
+      // EXPORT
+      // =============================================================================
+      function doExport() {
+        if (S.selected.size === 0 || S.rows.length === 0) return;
+
+        var cols = Array.from(S.selected);
+        var labels = cols.map(pathLabel);
+        var data = [labels];
+
+        for (var ri = 0; ri < S.rows.length; ri++) {
+          var row = [];
+          for (var ci = 0; ci < cols.length; ci++) {
+            var v = S.rows[ri][cols[ci]];
+            row.push(v !== undefined ? v : "");
+          }
+          data.push(row);
+        }
+
+        var ws = XLSX.utils.aoa_to_sheet(data);
+
+        // header styling
+        var range = XLSX.utils.decode_range(ws["!ref"]);
+        for (var c = range.s.c; c <= range.e.c; c++) {
+          var cell = ws[XLSX.utils.encode_cell({ r: 0, c: c })];
+          if (cell)
+            cell.s = {
+              font: { bold: true, name: "Arial", sz: 10 },
+              fill: { fgColor: { rgb: "DBEAFE" }, patternType: "solid" },
+              alignment: { horizontal: "left" },
+            };
+        }
+
+        // column widths
+        ws["!cols"] = labels.map(function (lbl, ci) {
+          var max = lbl.length;
+          for (var ri = 0; ri < S.rows.length; ri++) {
+            var v = S.rows[ri][cols[ci]];
+            if (v && v.length > max) max = v.length;
+          }
+          return { wch: Math.min(max + 2, 50) };
+        });
+
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Extraktion");
+        XLSX.writeFile(
+          wb,
+          (S.fileName || "export") +
+            "_" +
+            new Date().toISOString().slice(0, 10) +
+            ".xlsx",
+        );
+        toast(S.rows.length + " Zeilen exportiert");
+      }
+
+      // =============================================================================
+      // UTILS
+      // =============================================================================
+      function byId(id) {
+        return document.getElementById(id);
+      }
+
+      function he(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function pathLabel(path) {
+        var m = path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/);
+        if (m) return m[2] ? m[1] + " / " + m[2] : m[1];
+        return path.split("/").pop().replace("@", "");
+      }
+
+      function showProgress(pct, label) {
+        byId("progressWrap").classList.add("show");
+        byId("progressFill").style.width = pct + "%";
+        byId("progressLabel").textContent = label;
+      }
+      function hideProgress() {
+        byId("progressWrap").classList.remove("show");
+      }
+
+      function setFooter() {
+        byId("footerInfo").innerHTML =
+          "<b>" +
+          S.rowCount +
+          "</b> Datensätze · <b>" +
+          S.fields.length +
+          "</b> Felder erkannt";
+      }
+
+      var _toastTimer;
+      function toast(msg, isErr) {
+        var el = byId("toast");
+        el.textContent = msg;
+        el.className = "toast show" + (isErr ? " err" : "");
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(function () {
+          el.classList.remove("show");
+        }, 3000);
+      }
+    </script>
+  </body>
 </html>
