@@ -875,6 +875,13 @@
 
       function parseXML(xmlText) {
         setProgress(10, "Parse XML…");
+        // Pre-sanitize unescaped & (not part of &amp; &lt; &gt; &quot; &apos; or &#...;)
+        // This fixes broken XML from exporters that embed raw & in text content
+        xmlText = xmlText.replace(
+          /&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[\da-fA-F]+);)/g,
+          "&amp;",
+        );
+
         var xmlDoc;
         try {
           var parser = new DOMParser();
@@ -891,6 +898,7 @@
         setProgress(25, "Erkunde Struktur…");
 
         // Pass 1: row-anchor = most repeated element
+
         var tagDepthCount = {};
         function scanDepths(node, depth) {
           if (node.nodeType !== 1) return;
