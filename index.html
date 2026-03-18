@@ -7,7 +7,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap");
-
       *,
       *::before,
       *::after {
@@ -15,7 +14,6 @@
         margin: 0;
         padding: 0;
       }
-
       :root {
         --bg: #f5f5f3;
         --surface: #ffffff;
@@ -30,7 +28,6 @@
         --mono: "IBM Plex Mono", monospace;
         --sans: "IBM Plex Sans", sans-serif;
       }
-
       body {
         background: var(--bg);
         color: var(--text);
@@ -40,8 +37,6 @@
         display: grid;
         grid-template-rows: auto 1fr auto;
       }
-
-      /* HEADER */
       header {
         border-bottom: 1px solid var(--border);
         padding: 18px 32px;
@@ -66,23 +61,18 @@
         font-size: 12px;
         font-family: var(--mono);
       }
-
-      /* MAIN LAYOUT */
       main {
         display: grid;
         grid-template-columns: 380px 1fr;
-        height: calc(100vh - 57px - 40px);
+        height: calc(100vh - 57px - 41px);
         overflow: hidden;
       }
-
-      /* LEFT PANEL */
       .left-panel {
         border-right: 1px solid var(--border);
         display: flex;
         flex-direction: column;
         overflow: hidden;
       }
-
       .panel-section {
         border-bottom: 1px solid var(--border);
         padding: 20px;
@@ -94,7 +84,6 @@
         display: flex;
         flex-direction: column;
       }
-
       .section-label {
         font-family: var(--mono);
         font-size: 10px;
@@ -103,8 +92,6 @@
         color: var(--muted);
         margin-bottom: 12px;
       }
-
-      /* DROPZONE */
       .dropzone {
         border: 1px dashed var(--border-active);
         background: var(--surface2);
@@ -142,7 +129,6 @@
         font-size: 13px;
         margin-bottom: 4px;
       }
-
       .file-info {
         display: none;
         align-items: center;
@@ -175,8 +161,6 @@
         color: var(--muted);
         flex-shrink: 0;
       }
-
-      /* PROGRESS */
       .parse-progress {
         display: none;
         margin-top: 10px;
@@ -203,15 +187,12 @@
         color: var(--muted);
         margin-top: 6px;
       }
-
-      /* FIELD TREE */
       .field-tree-wrap {
         flex: 1;
         overflow-y: auto;
         scrollbar-width: thin;
         scrollbar-color: var(--border) transparent;
       }
-
       .empty-state {
         color: var(--muted);
         font-size: 12px;
@@ -220,7 +201,6 @@
         line-height: 1.8;
         font-family: var(--mono);
       }
-
       .tree-controls {
         display: flex;
         gap: 6px;
@@ -249,7 +229,6 @@
         border-color: var(--accent2);
         background: rgba(37, 99, 235, 0.06);
       }
-
       .search-field {
         width: 100%;
         background: var(--surface2);
@@ -269,8 +248,6 @@
       .search-field::placeholder {
         color: var(--muted);
       }
-
-      /* FIELD ITEMS */
       .field-item {
         display: flex;
         align-items: center;
@@ -280,7 +257,6 @@
         cursor: pointer;
         transition: background 0.1s;
         user-select: none;
-        position: relative;
       }
       .field-item:hover {
         background: var(--surface2);
@@ -288,7 +264,6 @@
       .field-item.selected {
         background: rgba(37, 99, 235, 0.06);
       }
-
       .field-checkbox {
         width: 14px;
         height: 14px;
@@ -314,7 +289,6 @@
         border-left: none;
         transform: rotate(45deg);
       }
-
       .field-path {
         font-family: var(--mono);
         font-size: 11px;
@@ -330,21 +304,17 @@
       .field-path .leaf.attr {
         color: var(--accent2);
       }
-
       .field-count {
         font-family: var(--mono);
         font-size: 10px;
         color: var(--border-active);
         flex-shrink: 0;
       }
-
-      /* RIGHT PANEL */
       .right-panel {
         display: flex;
         flex-direction: column;
         overflow: hidden;
       }
-
       .right-header {
         border-bottom: 1px solid var(--border);
         padding: 16px 24px;
@@ -354,7 +324,6 @@
         flex-shrink: 0;
         background: var(--surface);
       }
-
       .preview-title {
         font-family: var(--mono);
         font-size: 11px;
@@ -370,15 +339,12 @@
       .preview-stats span {
         color: var(--accent2);
       }
-
-      /* TABLE */
       .table-wrap {
         flex: 1;
         overflow: auto;
         scrollbar-width: thin;
         scrollbar-color: var(--border) transparent;
       }
-
       .preview-empty {
         height: 100%;
         display: flex;
@@ -394,14 +360,12 @@
         font-size: 40px;
         opacity: 0.3;
       }
-
       table {
         width: 100%;
         border-collapse: collapse;
         font-family: var(--mono);
         font-size: 11px;
       }
-
       thead th {
         position: sticky;
         top: 0;
@@ -426,7 +390,6 @@
       thead th .th-remove:hover {
         color: var(--danger);
       }
-
       tbody tr {
         border-bottom: 1px solid var(--border);
         transition: background 0.08s;
@@ -434,7 +397,6 @@
       tbody tr:hover {
         background: var(--surface2);
       }
-
       tbody td {
         padding: 8px 14px;
         color: var(--text);
@@ -445,10 +407,7 @@
       }
       tbody td.empty {
         color: var(--border-active);
-        font-style: italic;
       }
-
-      /* FOOTER */
       footer {
         border-top: 1px solid var(--border);
         padding: 10px 24px;
@@ -458,7 +417,6 @@
         background: var(--surface);
         flex-shrink: 0;
       }
-
       .footer-info {
         font-family: var(--mono);
         font-size: 10px;
@@ -467,7 +425,6 @@
       .footer-info span {
         color: var(--accent2);
       }
-
       .export-btn {
         display: flex;
         align-items: center;
@@ -498,42 +455,6 @@
         cursor: not-allowed;
         transform: none;
       }
-      .export-btn .btn-icon {
-        font-size: 14px;
-      }
-
-      /* SELECTED TAGS */
-      .selected-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        margin-top: 8px;
-        flex-shrink: 0;
-      }
-      .tag {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        background: rgba(37, 99, 235, 0.06);
-        border: 1px solid rgba(37, 99, 235, 0.2);
-        border-radius: 3px;
-        padding: 3px 8px;
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--accent2);
-      }
-      .tag-remove {
-        cursor: pointer;
-        color: var(--muted);
-        line-height: 1;
-        font-size: 12px;
-        transition: color 0.1s;
-      }
-      .tag-remove:hover {
-        color: var(--danger);
-      }
-
-      /* NOTIFICATIONS */
       .toast {
         position: fixed;
         bottom: 60px;
@@ -549,7 +470,7 @@
         z-index: 100;
         transform: translateX(120%);
         transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        max-width: 280px;
+        max-width: 300px;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
       }
       .toast.show {
@@ -558,8 +479,6 @@
       .toast.error {
         border-left-color: var(--danger);
       }
-
-      /* SCROLLBAR */
       ::-webkit-scrollbar {
         width: 5px;
         height: 5px;
@@ -570,9 +489,6 @@
       ::-webkit-scrollbar-thumb {
         background: var(--border);
         border-radius: 3px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: var(--border-active);
       }
     </style>
   </head>
@@ -587,9 +503,7 @@
     </header>
 
     <main>
-      <!-- LEFT: Upload + Field selector -->
       <div class="left-panel">
-        <!-- Upload -->
         <div class="panel-section">
           <div class="section-label">01 / XML Datei</div>
           <div class="dropzone" id="dropzone">
@@ -600,8 +514,7 @@
             />
             <div class="dropzone-icon">⬡</div>
             <div class="dropzone-text">
-              <strong>XML hochladen</strong>
-              Drag & Drop oder klicken
+              <strong>XML hochladen</strong>Drag &amp; Drop oder klicken
             </div>
           </div>
           <div class="file-info" id="fileInfo">
@@ -613,22 +526,14 @@
             <div class="progress-bar-track">
               <div class="progress-bar-fill" id="progressFill"></div>
             </div>
-            <div class="progress-text" id="progressText">
-              Analysiere Struktur…
-            </div>
+            <div class="progress-text" id="progressText">Analysiere…</div>
           </div>
         </div>
-
-        <!-- Field selector -->
         <div class="panel-section">
           <div class="section-label">02 / Felder auswählen</div>
           <div class="tree-controls">
-            <button class="tree-btn" id="btnAll" onclick="selectAll()">
-              Alle
-            </button>
-            <button class="tree-btn" id="btnNone" onclick="selectNone()">
-              Keine
-            </button>
+            <button class="tree-btn" onclick="selectAll()">Alle</button>
+            <button class="tree-btn" onclick="selectNone()">Keine</button>
             <button
               class="tree-btn active"
               id="btnFlat"
@@ -655,7 +560,6 @@
         </div>
       </div>
 
-      <!-- RIGHT: Preview table -->
       <div class="right-panel">
         <div class="right-header">
           <div class="preview-title">Vorschau</div>
@@ -678,53 +582,143 @@
         disabled
         onclick="exportExcel()"
       >
-        <span class="btn-icon">↓</span> Excel exportieren
+        <span>↓</span> Excel exportieren
       </button>
     </footer>
 
     <div class="toast" id="toast"></div>
 
     <script>
-      // ─── STATE ───────────────────────────────────────────────
-      let allFields = []; // [{path, leafName, isAttr, count}]
-      let selectedFields = new Set();
-      let parsedRows = []; // [{rowIndex, data: {path: value}}]
-      let currentView = "flat";
-      let filterQuery = "";
-      let xmlFileName = "";
-      let totalNodes = 0;
+      // ─── STATE ───────────────────────────────────────────────────────────────────
+      var allFields = [];
+      var selectedFields = new Set();
+      var parsedRows = [];
+      var currentView = "flat";
+      var filterQuery = "";
+      var xmlFileName = "";
+      var totalNodes = 0;
 
-      // ─── FILE HANDLING ────────────────────────────────────────
-      const dropzone = document.getElementById("dropzone");
-      const fileInput = document.getElementById("fileInput");
+      // ─── INDEXEDDB ────────────────────────────────────────────────────────────────
+      var DB_NAME = "xml_extractor_v2";
 
-      dropzone.addEventListener("dragover", (e) => {
+      function openDB() {
+        return new Promise(function (resolve, reject) {
+          var req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = function (e) {
+            e.target.result.createObjectStore("s");
+          };
+          req.onsuccess = function (e) {
+            resolve(e.target.result);
+          };
+          req.onerror = function () {
+            reject(req.error);
+          };
+        });
+      }
+
+      function dbPut(key, value) {
+        return openDB()
+          .then(function (db) {
+            return new Promise(function (resolve, reject) {
+              var tx = db.transaction("s", "readwrite");
+              tx.objectStore("s").put(value, key);
+              tx.oncomplete = resolve;
+              tx.onerror = function () {
+                reject(tx.error);
+              };
+            });
+          })
+          .catch(function (e) {
+            console.warn("dbPut:", e);
+          });
+      }
+
+      function dbGet(key) {
+        return openDB()
+          .then(function (db) {
+            return new Promise(function (resolve, reject) {
+              var tx = db.transaction("s", "readonly");
+              var req = tx.objectStore("s").get(key);
+              req.onsuccess = function () {
+                resolve(req.result);
+              };
+              req.onerror = function () {
+                reject(req.error);
+              };
+            });
+          })
+          .catch(function () {
+            return null;
+          });
+      }
+
+      function saveSession() {
+        dbPut("session", {
+          allFields: allFields,
+          selectedFields: Array.from(selectedFields),
+          parsedRows: parsedRows,
+          xmlFileName: xmlFileName,
+          totalNodes: totalNodes,
+          currentView: currentView,
+          ts: Date.now(),
+        });
+      }
+
+      // ─── STARTUP: restore session ─────────────────────────────────────────────────
+      dbGet("session").then(function (s) {
+        if (!s || !s.parsedRows || s.parsedRows.length === 0) return;
+        allFields = s.allFields || [];
+        selectedFields = new Set(s.selectedFields || []);
+        parsedRows = s.parsedRows || [];
+        xmlFileName = s.xmlFileName || "";
+        totalNodes = s.totalNodes || 0;
+        currentView = s.currentView || "flat";
+
+        document.getElementById("fileInfo").classList.add("visible");
+        document.getElementById("fileName").textContent = xmlFileName + ".xml";
+        document.getElementById("fileSize").textContent =
+          totalNodes + " Datensätze (gecacht)";
+        document.getElementById("footerInfo").innerHTML =
+          "<span>" +
+          totalNodes +
+          "</span> Datensätze · <span>" +
+          allFields.length +
+          "</span> Felder erkannt";
+        document
+          .getElementById("btnFlat")
+          .classList.toggle("active", currentView === "flat");
+        document
+          .getElementById("btnSorted")
+          .classList.toggle("active", currentView === "sorted");
+        document.getElementById("exportBtn").disabled =
+          selectedFields.size === 0;
+        renderFieldTree();
+        renderTable();
+        showToast("Letzter Stand wiederhergestellt");
+      });
+
+      // ─── FILE HANDLING ────────────────────────────────────────────────────────────
+      var dropzone = document.getElementById("dropzone");
+      var fileInput = document.getElementById("fileInput");
+
+      dropzone.addEventListener("dragover", function (e) {
         e.preventDefault();
         dropzone.classList.add("drag-over");
       });
-      dropzone.addEventListener("dragleave", () =>
-        dropzone.classList.remove("drag-over"),
-      );
-      dropzone.addEventListener("drop", (e) => {
+      dropzone.addEventListener("dragleave", function () {
+        dropzone.classList.remove("drag-over");
+      });
+      dropzone.addEventListener("drop", function (e) {
         e.preventDefault();
         dropzone.classList.remove("drag-over");
-        const file = e.dataTransfer.files[0];
-        if (file) handleFile(file);
+        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
       });
-      fileInput.addEventListener("change", (e) => {
+      fileInput.addEventListener("change", function (e) {
         if (e.target.files[0]) handleFile(e.target.files[0]);
       });
 
       function handleFile(file) {
-        if (
-          !file.name.toLowerCase().endsWith(".xml") &&
-          file.type &&
-          !file.type.includes("xml")
-        ) {
-          showToast("Nur XML-Dateien erlaubt", true);
-          return;
-        }
-        xmlFileName = file.name.replace(".xml", "");
+        xmlFileName = file.name.replace(/\.xml$/i, "");
         document.getElementById("fileName").textContent = file.name;
         document.getElementById("fileSize").textContent = formatBytes(
           file.size,
@@ -732,9 +726,10 @@
         document.getElementById("fileInfo").classList.add("visible");
         document.getElementById("parseProgress").classList.add("visible");
         setProgress(0, "Lese Datei…");
-
-        const reader = new FileReader();
-        reader.onload = (e) => parseXML(e.target.result);
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          parseXML(e.target.result);
+        };
         reader.readAsText(file);
       }
 
@@ -744,213 +739,325 @@
         return (b / 1048576).toFixed(1) + " MB";
       }
 
-      // ─── XML PARSER ───────────────────────────────────────────
+      // ─── XML PARSER ──────────────────────────────────────────────────────────────
+
+      function detectKVPattern(elements) {
+        if (!elements || elements.length < 2) return null;
+        var first = elements[0];
+        if (first.children.length < 2) return null;
+        var keyTag = first.children[0].localName;
+        var valueTag = first.children[1].localName;
+        var keys = [];
+        for (var i = 0; i < elements.length; i++) {
+          var k = elements[i].getElementsByTagNameNS("*", keyTag)[0];
+          if (k) keys.push(k.textContent.trim());
+        }
+        var unique = new Set(keys.filter(Boolean));
+        return unique.size > 1 ? { keyTag: keyTag, valueTag: valueTag } : null;
+      }
+
+      function findKVContainers(node, kvPatterns) {
+        if (node.nodeType !== 1) return;
+        var byTag = {};
+        for (var i = 0; i < node.children.length; i++) {
+          var t = node.children[i].localName;
+          if (!byTag[t]) byTag[t] = [];
+          byTag[t].push(node.children[i]);
+        }
+        var tags = Object.keys(byTag);
+        for (var ti = 0; ti < tags.length; ti++) {
+          var tag = tags[ti];
+          var siblings = byTag[tag];
+          if (siblings.length >= 2) {
+            var kv = detectKVPattern(siblings);
+            if (kv) kvPatterns[tag] = kv;
+          }
+          findKVContainers(siblings[0], kvPatterns);
+        }
+      }
+
+      function buildExtractRow(kvPatterns) {
+        return function extractRow(rowEl) {
+          var row = {};
+          function walk(node, path) {
+            if (node.nodeType !== 1) return;
+            var tag = node.localName.toUpperCase();
+            var currPath = path ? path + "/" + tag : tag;
+
+            for (var ai = 0; ai < node.attributes.length; ai++) {
+              var attr = node.attributes[ai];
+              if (attr.name.indexOf(":") === -1) {
+                row[currPath + "/@" + attr.name.toUpperCase()] = attr.value;
+              }
+            }
+
+            if (node.children.length === 0) {
+              row[currPath] = node.textContent.trim();
+              return;
+            }
+
+            var byTag = {};
+            for (var ci = 0; ci < node.children.length; ci++) {
+              var ct = node.children[ci].localName;
+              if (!byTag[ct]) byTag[ct] = [];
+              byTag[ct].push(node.children[ci]);
+            }
+
+            var childTags = Object.keys(byTag);
+            for (var cti = 0; cti < childTags.length; cti++) {
+              var childTag = childTags[cti];
+              var siblings = byTag[childTag];
+
+              if (siblings.length >= 2 && kvPatterns[childTag]) {
+                var kv = kvPatterns[childTag];
+                for (var si = 0; si < siblings.length; si++) {
+                  var sib = siblings[si];
+                  var keyEl = sib.getElementsByTagNameNS("*", kv.keyTag)[0];
+                  var valEl = sib.getElementsByTagNameNS("*", kv.valueTag)[0];
+                  if (keyEl) {
+                    var keyName = keyEl.textContent
+                      .trim()
+                      .replace(/[\/\\?\*\[\]:]/g, "_");
+                    var colPath =
+                      currPath +
+                      "/" +
+                      childTag.toUpperCase() +
+                      "[" +
+                      keyName +
+                      "]";
+                    row[colPath] = valEl ? valEl.textContent.trim() : "";
+                    for (var sci = 0; sci < sib.children.length; sci++) {
+                      var subChild = sib.children[sci];
+                      var subTag = subChild.localName.toUpperCase();
+                      if (
+                        subTag !== kv.keyTag.toUpperCase() &&
+                        subTag !== kv.valueTag.toUpperCase()
+                      ) {
+                        walk(
+                          subChild,
+                          currPath +
+                            "/" +
+                            childTag.toUpperCase() +
+                            "[" +
+                            keyName +
+                            "]",
+                        );
+                      }
+                    }
+                  }
+                }
+              } else if (siblings.length >= 2) {
+                for (var ri = 0; ri < siblings.length; ri++) {
+                  walk(
+                    siblings[ri],
+                    currPath +
+                      "/" +
+                      childTag.toUpperCase() +
+                      "[" +
+                      (ri + 1) +
+                      "]",
+                  );
+                }
+              } else {
+                walk(siblings[0], currPath);
+              }
+            }
+          }
+          walk(rowEl, "");
+          return row;
+        };
+      }
+
       function parseXML(xmlText) {
         setProgress(10, "Parse XML…");
-
-        let parser, xmlDoc;
+        var xmlDoc;
         try {
-          parser = new DOMParser();
+          var parser = new DOMParser();
           xmlDoc = parser.parseFromString(xmlText, "text/xml");
-          const err = xmlDoc.querySelector("parsererror");
-          if (err)
-            throw new Error(
-              "XML Parse-Fehler: " + err.textContent.slice(0, 80),
-            );
-        } catch (e) {
-          showToast(e.message, true);
+          var errEl = xmlDoc.querySelector("parsererror");
+          if (errEl)
+            throw new Error("XML-Fehler: " + errEl.textContent.slice(0, 100));
+        } catch (ex) {
+          showToast(ex.message, true);
           document.getElementById("parseProgress").classList.remove("visible");
           return;
         }
 
-        setProgress(30, "Erkunde Struktur…");
+        setProgress(25, "Erkunde Struktur…");
 
-        // Discover all unique leaf paths
-        const fieldMap = new Map(); // path → count
-        const rowData = []; // array of flat {path→value} objects per "record"
+        // Pass 1: row-anchor = most repeated element
+        var tagDepthCount = {};
+        function scanDepths(node, depth) {
+          if (node.nodeType !== 1) return;
+          var k = node.localName + "@" + depth;
+          tagDepthCount[k] = (tagDepthCount[k] || 0) + 1;
+          for (var i = 0; i < node.children.length; i++)
+            scanDepths(node.children[i], depth + 1);
+        }
+        scanDepths(xmlDoc.documentElement, 0);
 
-        // Strategy: find the most-repeated element to use as row anchor
-        // We do a two-pass: 1) find all paths, 2) find repeat-element, extract rows
+        var bestKey = null,
+          bestCount = 0;
+        var depthKeys = Object.keys(tagDepthCount);
+        for (var dki = 0; dki < depthKeys.length; dki++) {
+          if (tagDepthCount[depthKeys[dki]] > bestCount) {
+            bestCount = tagDepthCount[depthKeys[dki]];
+            bestKey = depthKeys[dki];
+          }
+        }
+        var rowTag = bestKey
+          ? bestKey.split("@")[0]
+          : xmlDoc.documentElement.localName;
+        var rowElements = Array.from(
+          xmlDoc.getElementsByTagNameNS("*", rowTag),
+        );
+        setProgress(40, rowElements.length + " Datensätze gefunden…");
 
-        const allPaths = new Map();
+        // Pass 2: KV pattern detection
+        var kvPatterns = {};
+        if (rowElements.length > 0)
+          findKVContainers(rowElements[0], kvPatterns);
 
-        function walkDiscover(node, path) {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const tag = node.localName;
-            const currPath = path ? `${path}/${tag}` : tag;
+        setProgress(55, "Extrahiere Felder…");
 
-            // Attributes
-            for (const attr of node.attributes) {
-              const attrPath = `${currPath}/@${attr.name}`;
-              allPaths.set(attrPath, (allPaths.get(attrPath) || 0) + 1);
+        // Pass 3: extract rows
+        var extractRow = buildExtractRow(kvPatterns);
+        var rowData = [];
+        for (var ri = 0; ri < rowElements.length; ri++) {
+          rowData.push(extractRow(rowElements[ri]));
+        }
+
+        setProgress(80, "Baue Feldliste…");
+
+        // Build field registry in document order
+        var fieldCountMap = {};
+        var fieldOrderMap = {};
+        var orderIdx = 0;
+        for (var rowi = 0; rowi < rowData.length; rowi++) {
+          var rowKeys = Object.keys(rowData[rowi]);
+          for (var rki = 0; rki < rowKeys.length; rki++) {
+            var rk = rowKeys[rki];
+            if (fieldOrderMap[rk] === undefined) fieldOrderMap[rk] = orderIdx++;
+            if (rowData[rowi][rk] !== "") {
+              fieldCountMap[rk] = (fieldCountMap[rk] || 0) + 1;
+            } else if (fieldCountMap[rk] === undefined) {
+              fieldCountMap[rk] = 0;
             }
-
-            // If leaf (no element children)
-            const hasElementChild = Array.from(node.childNodes).some(
-              (c) => c.nodeType === Node.ELEMENT_NODE,
-            );
-            if (!hasElementChild) {
-              allPaths.set(currPath, (allPaths.get(currPath) || 0) + 1);
-            }
-
-            for (const child of node.children) {
-              walkDiscover(child, currPath);
-            }
           }
         }
 
-        walkDiscover(xmlDoc.documentElement, "");
-        setProgress(50, `${allPaths.size} Felder gefunden…`);
-
-        // Find most common repeating element (the row element)
-        // = element whose direct parent path has highest count
-        const parentCounts = new Map();
-        for (const [path, count] of allPaths) {
-          const parts = path.startsWith("@") ? [] : path.split("/");
-          if (parts.length >= 2) {
-            const parent = parts.slice(0, -1).join("/");
-            parentCounts.set(
-              parent,
-              Math.max(parentCounts.get(parent) || 0, count),
-            );
-          }
-        }
-
-        // The row anchor = path with highest count at a reasonable depth
-        let rowAnchorPath = null;
-        let rowAnchorCount = 0;
-        for (const [path, count] of parentCounts) {
-          if (count > rowAnchorCount) {
-            rowAnchorCount = count;
-            rowAnchorPath = path;
-          }
-        }
-
-        setProgress(65, "Extrahiere Zeilen…");
-
-        // Extract rows using the anchor
-        if (rowAnchorPath && rowAnchorCount > 1) {
-          // Find all elements matching the anchor path
-          const anchorTag = rowAnchorPath.split("/").pop();
-          const anchorElements = xmlDoc.getElementsByTagNameNS("*", anchorTag);
-
-          for (const anchorEl of anchorElements) {
-            const row = {};
-            extractFlatData(anchorEl, "", row);
-            rowData.push(row);
-          }
-        } else {
-          // Fallback: single row = whole document
-          const row = {};
-          extractFlatData(xmlDoc.documentElement, "", row);
-          rowData.push(row);
-        }
-
-        setProgress(85, "Baue Feldliste…");
-
-        // Build field list from actual row data
-        const fieldCountMap = new Map();
-        for (const row of rowData) {
-          for (const key of Object.keys(row)) {
-            fieldCountMap.set(key, (fieldCountMap.get(key) || 0) + 1);
-          }
-        }
-
-        allFields = Array.from(fieldCountMap.entries()).map(([path, count]) => {
-          const parts = path.split("/");
-          const leaf = parts[parts.length - 1];
-          const isAttr = leaf.startsWith("@");
-          return {
-            path,
-            leafName: isAttr ? leaf.slice(1) : leaf,
-            isAttr,
-            count,
-          };
-        });
+        allFields = Object.keys(fieldCountMap)
+          .sort(function (a, b) {
+            return (fieldOrderMap[a] || 0) - (fieldOrderMap[b] || 0);
+          })
+          .map(function (path) {
+            var parts = path.split("/");
+            var leaf = parts[parts.length - 1];
+            var isAttr = leaf.charAt(0) === "@";
+            return {
+              path: path,
+              leafName: isAttr ? leaf.slice(1) : leaf,
+              isAttr: isAttr,
+              count: fieldCountMap[path],
+            };
+          });
 
         parsedRows = rowData;
         totalNodes = rowData.length;
 
         setProgress(100, "Fertig!");
-        setTimeout(() => {
+        setTimeout(function () {
           document.getElementById("parseProgress").classList.remove("visible");
         }, 600);
 
         document.getElementById("footerInfo").innerHTML =
-          `<span>${totalNodes}</span> Datensätze · <span>${allFields.length}</span> Felder erkannt`;
+          "<span>" +
+          totalNodes +
+          "</span> Datensätze · <span>" +
+          allFields.length +
+          "</span> Felder erkannt";
 
         selectedFields.clear();
+        document.getElementById("exportBtn").disabled = true;
         renderFieldTree();
         renderTable();
-        showToast(`${totalNodes} Datensätze, ${allFields.length} Felder`);
+        showToast(totalNodes + " Datensätze, " + allFields.length + " Felder");
+        saveSession();
       }
 
-      function extractFlatData(node, path, row) {
-        if (node.nodeType !== Node.ELEMENT_NODE) return;
-
-        const tag = node.localName;
-        const currPath = path ? `${path}/${tag}` : tag;
-
-        // Attributes
-        for (const attr of node.attributes) {
-          row[`${currPath}/@${attr.name}`] = attr.value;
-        }
-
-        const hasElementChild = Array.from(node.childNodes).some(
-          (c) => c.nodeType === Node.ELEMENT_NODE,
-        );
-        if (!hasElementChild) {
-          const text = node.textContent.trim();
-          if (text) row[currPath] = text;
-        }
-
-        for (const child of node.children) {
-          extractFlatData(child, currPath, row);
-        }
-      }
-
-      // ─── FIELD TREE ───────────────────────────────────────────
+      // ─── FIELD TREE ──────────────────────────────────────────────────────────────
       function renderFieldTree() {
-        const container = document.getElementById("fieldTree");
+        var container = document.getElementById("fieldTree");
         if (allFields.length === 0) {
           container.innerHTML =
-            '<div class="empty-state">Keine Felder gefunden</div>';
+            '<div class="empty-state">← XML hochladen<br>um Felder zu erkunden</div>';
           return;
         }
 
-        let fields = [...allFields];
+        var fields = allFields.slice();
 
         if (filterQuery) {
-          const q = filterQuery.toLowerCase();
-          fields = fields.filter(
-            (f) =>
-              f.path.toLowerCase().includes(q) ||
-              f.leafName.toLowerCase().includes(q),
-          );
+          var q = filterQuery.toLowerCase();
+          fields = fields.filter(function (f) {
+            return (
+              f.path.toLowerCase().indexOf(q) !== -1 ||
+              f.leafName.toLowerCase().indexOf(q) !== -1
+            );
+          });
         }
 
         if (currentView === "sorted") {
-          fields.sort((a, b) => a.path.localeCompare(b.path));
+          fields.sort(function (a, b) {
+            return a.path.localeCompare(b.path);
+          });
         }
 
-        const html = fields
-          .map((f) => {
-            const sel = selectedFields.has(f.path);
-            const pathParts = f.path.split("/");
-            const prefix = pathParts.slice(0, -1).join("/");
-            const leaf = pathParts[pathParts.length - 1];
-            const leafClass = f.isAttr ? "leaf attr" : "leaf";
-            const pathDisplay = prefix
-              ? `<span style="color:var(--muted)">${prefix}/</span><span class="${leafClass}">${leaf}</span>`
-              : `<span class="${leafClass}">${leaf}</span>`;
+        var html = "";
+        for (var fi = 0; fi < fields.length; fi++) {
+          var f = fields[fi];
+          var sel = selectedFields.has(f.path);
+          var kvMatch = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
+          var prefixDisplay, leafDisplay;
+          if (kvMatch) {
+            prefixDisplay = kvMatch[1].replace(/\/$/, "");
+            leafDisplay = kvMatch[2];
+          } else {
+            var parts = f.path.split("/");
+            prefixDisplay = parts.slice(0, -1).join("/");
+            leafDisplay = parts[parts.length - 1];
+          }
+          var leafClass = f.isAttr ? "leaf attr" : "leaf";
+          var pathDisplay = prefixDisplay
+            ? '<span style="color:var(--muted)">' +
+              esc(prefixDisplay) +
+              '/</span><span class="' +
+              leafClass +
+              '">' +
+              esc(leafDisplay) +
+              "</span>"
+            : '<span class="' + leafClass + '">' + esc(leafDisplay) + "</span>";
 
-            return `<div class="field-item ${sel ? "selected" : ""}" onclick="toggleField('${escHtml(f.path)}')">
-      <div class="field-checkbox"></div>
-      <div class="field-path" title="${escHtml(f.path)}">${pathDisplay}</div>
-      <div class="field-count">${f.count}</div>
-    </div>`;
-          })
-          .join("");
+          var safeOnclick =
+            "toggleField('" +
+            f.path.replace(/\\/g, "\\\\").replace(/'/g, "\\'") +
+            "')";
+          html +=
+            '<div class="field-item' +
+            (sel ? " selected" : "") +
+            '" onclick="' +
+            esc(safeOnclick) +
+            '">' +
+            '<div class="field-checkbox"></div>' +
+            '<div class="field-path" title="' +
+            esc(f.path) +
+            '">' +
+            pathDisplay +
+            "</div>" +
+            '<div class="field-count">' +
+            f.count +
+            "</div>" +
+            "</div>";
+        }
 
         container.innerHTML =
           html || '<div class="empty-state">Keine Treffer</div>';
@@ -963,14 +1070,17 @@
         renderTable();
         document.getElementById("exportBtn").disabled =
           selectedFields.size === 0;
+        saveSession();
       }
 
       function selectAll() {
-        allFields.forEach((f) => selectedFields.add(f.path));
+        for (var i = 0; i < allFields.length; i++)
+          selectedFields.add(allFields[i].path);
         renderFieldTree();
         renderTable();
         document.getElementById("exportBtn").disabled =
           selectedFields.size === 0;
+        saveSession();
       }
 
       function selectNone() {
@@ -978,6 +1088,7 @@
         renderFieldTree();
         renderTable();
         document.getElementById("exportBtn").disabled = true;
+        saveSession();
       }
 
       function setView(v) {
@@ -989,6 +1100,7 @@
           .getElementById("btnSorted")
           .classList.toggle("active", v === "sorted");
         renderFieldTree();
+        saveSession();
       }
 
       function filterFields(q) {
@@ -996,12 +1108,12 @@
         renderFieldTree();
       }
 
-      // ─── PREVIEW TABLE ────────────────────────────────────────
-      const PREVIEW_LIMIT = 200;
+      // ─── PREVIEW TABLE ───────────────────────────────────────────────────────────
+      var PREVIEW_LIMIT = 200;
 
       function renderTable() {
-        const container = document.getElementById("tableWrap");
-        const stats = document.getElementById("previewStats");
+        var container = document.getElementById("tableWrap");
+        var stats = document.getElementById("previewStats");
 
         if (selectedFields.size === 0) {
           container.innerHTML =
@@ -1010,95 +1122,123 @@
           return;
         }
 
-        const cols = Array.from(selectedFields);
-        const rows = parsedRows.slice(0, PREVIEW_LIMIT);
-        const colLabels = cols.map((c) => c.split("/").pop().replace("@", ""));
+        var cols = Array.from(selectedFields);
+        var rows = parsedRows.slice(0, PREVIEW_LIMIT);
+        var colLabels = cols.map(function (c) {
+          return pathToLabel(c);
+        });
 
-        const headerCells = cols
-          .map(
-            (c, i) =>
-              `<th>${escHtml(colLabels[i])}<span class="th-remove" onclick="toggleField('${escHtml(c)}')" title="Spalte entfernen">✕</span></th>`,
-          )
-          .join("");
+        var headerCells = "";
+        for (var ci = 0; ci < cols.length; ci++) {
+          var safeOnclick =
+            "toggleField('" +
+            cols[ci].replace(/\\/g, "\\\\").replace(/'/g, "\\'") +
+            "')";
+          headerCells +=
+            "<th>" +
+            esc(colLabels[ci]) +
+            '<span class="th-remove" onclick="' +
+            esc(safeOnclick) +
+            '" title="Spalte entfernen">✕</span></th>';
+        }
 
-        const bodyRows = rows
-          .map((row) => {
-            const cells = cols
-              .map((c) => {
-                const val = row[c];
-                return val
-                  ? `<td title="${escHtml(val)}">${escHtml(val)}</td>`
-                  : `<td class="empty">—</td>`;
-              })
-              .join("");
-            return `<tr>${cells}</tr>`;
-          })
-          .join("");
+        var bodyRows = "";
+        for (var ri = 0; ri < rows.length; ri++) {
+          var cells = "";
+          for (var rci = 0; rci < cols.length; rci++) {
+            var val = rows[ri][cols[rci]];
+            cells +=
+              val !== undefined && val !== ""
+                ? '<td title="' + esc(val) + '">' + esc(val) + "</td>"
+                : '<td class="empty">—</td>';
+          }
+          bodyRows += "<tr>" + cells + "</tr>";
+        }
 
-        container.innerHTML = `
-    <table>
-      <thead><tr>${headerCells}</tr></thead>
-      <tbody>${bodyRows}</tbody>
-    </table>`;
+        container.innerHTML =
+          "<table><thead><tr>" +
+          headerCells +
+          "</tr></thead><tbody>" +
+          bodyRows +
+          "</tbody></table>";
 
-        const total = parsedRows.length;
-        stats.innerHTML = `<span>${total}</span> Zeilen · <span>${cols.length}</span> Spalten${total > PREVIEW_LIMIT ? ` · Vorschau: ${PREVIEW_LIMIT}` : ""}`;
+        var total = parsedRows.length;
+        stats.innerHTML =
+          "<span>" +
+          total +
+          "</span> Zeilen · <span>" +
+          cols.length +
+          "</span> Spalten" +
+          (total > PREVIEW_LIMIT ? " · Vorschau: " + PREVIEW_LIMIT : "");
       }
 
-      // ─── EXCEL EXPORT ─────────────────────────────────────────
+      // ─── EXCEL EXPORT ────────────────────────────────────────────────────────────
       function exportExcel() {
         if (selectedFields.size === 0 || parsedRows.length === 0) return;
 
-        const cols = Array.from(selectedFields);
-        const colLabels = cols.map((c) => c.split("/").pop().replace("@", ""));
+        var cols = Array.from(selectedFields);
+        var colLabels = cols.map(function (c) {
+          return pathToLabel(c);
+        });
+        var sheetData = [colLabels];
 
-        const sheetData = [colLabels];
-
-        for (const row of parsedRows) {
-          sheetData.push(cols.map((c) => row[c] ?? ""));
+        for (var i = 0; i < parsedRows.length; i++) {
+          var dataRow = [];
+          for (var ci = 0; ci < cols.length; ci++) {
+            var v = parsedRows[i][cols[ci]];
+            dataRow.push(v !== undefined ? v : "");
+          }
+          sheetData.push(dataRow);
         }
 
-        const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-        // Style header row
-        const range = XLSX.utils.decode_range(ws["!ref"]);
-        for (let c = range.s.c; c <= range.e.c; c++) {
-          const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+        var ws = XLSX.utils.aoa_to_sheet(sheetData);
+        var range = XLSX.utils.decode_range(ws["!ref"]);
+        for (var c = range.s.c; c <= range.e.c; c++) {
+          var cell = ws[XLSX.utils.encode_cell({ r: 0, c: c })];
           if (cell) {
             cell.s = {
               font: { bold: true, name: "Arial", sz: 10 },
-              fill: { fgColor: { rgb: "E8FF00" }, patternType: "solid" },
+              fill: { fgColor: { rgb: "DBEAFE" }, patternType: "solid" },
               alignment: { horizontal: "left" },
             };
           }
         }
 
-        // Auto column widths
-        const colWidths = colLabels.map((label, ci) => {
-          let max = label.length;
-          for (const row of parsedRows) {
-            const val = String(row[cols[ci]] ?? "");
-            if (val.length > max) max = val.length;
+        var colWidths = colLabels.map(function (label, ci) {
+          var max = label.length;
+          for (var ri = 0; ri < parsedRows.length; ri++) {
+            var v = parsedRows[ri][cols[ci]];
+            if (v && v.length > max) max = v.length;
           }
-          return { wch: Math.min(max + 2, 40) };
+          return { wch: Math.min(max + 2, 45) };
         });
         ws["!cols"] = colWidths;
 
-        const wb = XLSX.utils.book_new();
+        var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Extraktion");
-
-        const fname = `${xmlFileName || "export"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        var fname =
+          (xmlFileName || "export") +
+          "_" +
+          new Date().toISOString().slice(0, 10) +
+          ".xlsx";
         XLSX.writeFile(wb, fname);
-        showToast(`${parsedRows.length} Zeilen exportiert`);
+        showToast(parsedRows.length + " Zeilen exportiert");
       }
 
-      // ─── UTILS ────────────────────────────────────────────────
+      // ─── UTILS ───────────────────────────────────────────────────────────────────
       function setProgress(pct, text) {
         document.getElementById("progressFill").style.width = pct + "%";
         document.getElementById("progressText").textContent = text;
       }
 
-      function escHtml(s) {
+      function pathToLabel(path) {
+        var kvMatch = path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/);
+        if (kvMatch)
+          return kvMatch[2] ? kvMatch[1] + " / " + kvMatch[2] : kvMatch[1];
+        return path.split("/").pop().replace("@", "");
+      }
+
+      function esc(s) {
         return String(s)
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
@@ -1107,13 +1247,15 @@
           .replace(/'/g, "&#39;");
       }
 
-      let toastTimer;
-      function showToast(msg, isError = false) {
-        const t = document.getElementById("toast");
+      var toastTimer;
+      function showToast(msg, isError) {
+        var t = document.getElementById("toast");
         t.textContent = msg;
         t.className = "toast show" + (isError ? " error" : "");
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+        toastTimer = setTimeout(function () {
+          t.classList.remove("show");
+        }, 2800);
       }
     </script>
   </body>
