@@ -532,8 +532,12 @@
         <div class="panel-section">
           <div class="section-label">02 / Felder auswählen</div>
           <div class="tree-controls">
-            <button class="tree-btn" onclick="selectAll()">Alle</button>
-            <button class="tree-btn" onclick="selectNone()">Keine</button>
+            <button class="tree-btn" id="btnAll" onclick="selectAll()">
+              Alle
+            </button>
+            <button class="tree-btn" id="btnNone" onclick="selectNone()">
+              Keine
+            </button>
             <button
               class="tree-btn active"
               id="btnFlat"
@@ -692,6 +696,7 @@
           .classList.toggle("active", currentView === "sorted");
         document.getElementById("exportBtn").disabled =
           selectedFields.size === 0;
+        updateSelectionButtons();
         renderFieldTree();
         renderTable();
         showToast("Letzter Stand wiederhergestellt");
@@ -979,6 +984,7 @@
 
         selectedFields.clear();
         document.getElementById("exportBtn").disabled = true;
+        updateSelectionButtons();
         renderFieldTree();
         renderTable();
         showToast(totalNodes + " Datensätze, " + allFields.length + " Felder");
@@ -1066,6 +1072,7 @@
       function toggleField(path) {
         if (selectedFields.has(path)) selectedFields.delete(path);
         else selectedFields.add(path);
+        updateSelectionButtons();
         renderFieldTree();
         renderTable();
         document.getElementById("exportBtn").disabled =
@@ -1073,9 +1080,18 @@
         saveSession();
       }
 
+      function updateSelectionButtons() {
+        var hasAny = selectedFields.size > 0;
+        var hasAll =
+          allFields.length > 0 && selectedFields.size === allFields.length;
+        document.getElementById("btnAll").classList.toggle("active", hasAll);
+        document.getElementById("btnNone").classList.toggle("active", !hasAny);
+      }
+
       function selectAll() {
         for (var i = 0; i < allFields.length; i++)
           selectedFields.add(allFields[i].path);
+        updateSelectionButtons();
         renderFieldTree();
         renderTable();
         document.getElementById("exportBtn").disabled =
@@ -1085,6 +1101,7 @@
 
       function selectNone() {
         selectedFields.clear();
+        updateSelectionButtons();
         renderFieldTree();
         renderTable();
         document.getElementById("exportBtn").disabled = true;
