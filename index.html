@@ -7,7 +7,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap");
-
       *,
       *::before,
       *::after {
@@ -15,24 +14,22 @@
         margin: 0;
         padding: 0;
       }
-
       :root {
         --bg: #f5f5f3;
-        --surface: #ffffff;
-        --surface2: #f0f0ee;
-        --border: #ddddd9;
-        --border-hi: #c0c0bc;
+        --surf: #fff;
+        --surf2: #f0f0ee;
+        --brd: #ddddd9;
+        --brdhi: #c0c0bc;
         --blue: #2563eb;
-        --text: #1a1a1a;
+        --txt: #1a1a1a;
         --muted: #8a8a85;
         --red: #dc2626;
         --mono: "IBM Plex Mono", monospace;
         --sans: "IBM Plex Sans", sans-serif;
       }
-
       body {
         background: var(--bg);
-        color: var(--text);
+        color: var(--txt);
         font-family: var(--sans);
         font-size: 14px;
         height: 100vh;
@@ -40,15 +37,12 @@
         grid-template-rows: 57px 1fr 41px;
         overflow: hidden;
       }
-
-      /* HEADER */
       header {
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid var(--brd);
         padding: 0 32px;
         display: flex;
         align-items: center;
-        background: var(--surface);
-        flex-shrink: 0;
+        background: var(--surf);
       }
       .logo {
         font-family: var(--mono);
@@ -61,40 +55,36 @@
         color: var(--muted);
         font-style: normal;
       }
-      .subtitle {
+      .sub {
         color: var(--muted);
         font-size: 12px;
         font-family: var(--mono);
         margin-left: 16px;
       }
-
-      /* MAIN */
       main {
         display: grid;
         grid-template-columns: 380px 1fr;
         overflow: hidden;
       }
-
-      /* LEFT */
-      .left-panel {
-        border-right: 1px solid var(--border);
+      .lp {
+        border-right: 1px solid var(--brd);
         display: flex;
         flex-direction: column;
         overflow: hidden;
       }
-      .panel-section {
-        border-bottom: 1px solid var(--border);
+      .sec {
+        border-bottom: 1px solid var(--brd);
         padding: 18px 20px;
         flex-shrink: 0;
       }
-      .panel-section.grow {
+      .sec.grow {
         flex: 1;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         border-bottom: none;
       }
-      .section-label {
+      .lbl {
         font-family: var(--mono);
         font-size: 10px;
         text-transform: uppercase;
@@ -102,11 +92,9 @@
         color: var(--muted);
         margin-bottom: 10px;
       }
-
-      /* DROPZONE */
-      .dropzone {
-        border: 1px dashed var(--border-hi);
-        background: var(--surface2);
+      .dz {
+        border: 1px dashed var(--brdhi);
+        background: var(--surf2);
         border-radius: 4px;
         padding: 22px 16px;
         text-align: center;
@@ -116,12 +104,12 @@
           border-color 0.15s,
           background 0.15s;
       }
-      .dropzone:hover,
-      .dropzone.over {
+      .dz:hover,
+      .dz.over {
         border-color: var(--blue);
         background: rgba(37, 99, 235, 0.03);
       }
-      .dropzone input[type="file"] {
+      .dz input[type="file"] {
         position: absolute;
         inset: 0;
         opacity: 0;
@@ -132,90 +120,84 @@
       .dz-icon {
         font-size: 24px;
       }
-      .dz-text {
+      .dz-txt {
         color: var(--muted);
         font-size: 12px;
         margin-top: 6px;
         line-height: 1.5;
       }
-      .dz-text strong {
+      .dz-txt strong {
         display: block;
-        color: var(--text);
+        color: var(--txt);
         font-size: 13px;
       }
-
-      /* FILE INFO */
-      .file-bar {
+      .fbar {
         display: none;
         align-items: center;
         gap: 10px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
+        background: var(--surf2);
+        border: 1px solid var(--brd);
         border-radius: 4px;
         padding: 10px 14px;
         font-family: var(--mono);
         font-size: 11px;
         margin-top: 10px;
       }
-      .file-bar.show {
+      .fbar.show {
         display: flex;
       }
-      .file-dot {
+      .fdot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
         background: var(--blue);
         flex-shrink: 0;
       }
-      .file-name {
+      .fname {
         color: var(--blue);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         flex: 1;
       }
-      .file-size {
+      .fsize {
         color: var(--muted);
         flex-shrink: 0;
       }
-
-      /* PROGRESS */
-      .progress-wrap {
+      .pgwrap {
         display: none;
         margin-top: 10px;
       }
-      .progress-wrap.show {
+      .pgwrap.show {
         display: block;
       }
-      .progress-track {
+      .pgtrack {
         height: 2px;
-        background: var(--border);
+        background: var(--brd);
         border-radius: 1px;
         overflow: hidden;
       }
-      .progress-fill {
+      .pgfill {
         height: 100%;
         background: var(--blue);
         width: 0;
         transition: width 0.2s;
       }
-      .progress-label {
+      .pglbl {
         font-family: var(--mono);
         font-size: 10px;
         color: var(--muted);
         margin-top: 5px;
       }
-
-      /* TREE CONTROLS */
-      .tree-controls {
+      .tctrl {
         display: flex;
         gap: 5px;
         flex-shrink: 0;
         margin-bottom: 8px;
       }
       .tbtn {
-        background: var(--surface2);
-        border: 1px solid var(--border);
+        background: var(--surf2);
+        border: 1px solid var(--brd);
         color: var(--muted);
         font-family: var(--mono);
         font-size: 10px;
@@ -227,21 +209,19 @@
         letter-spacing: 0.06em;
       }
       .tbtn:hover {
-        color: var(--text);
-        border-color: var(--border-hi);
+        color: var(--txt);
+        border-color: var(--brdhi);
       }
       .tbtn.on {
         color: var(--blue);
         border-color: var(--blue);
         background: rgba(37, 99, 235, 0.06);
       }
-
-      /* SEARCH */
-      .search-inp {
+      .sinp {
         width: 100%;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        color: var(--text);
+        background: var(--surf2);
+        border: 1px solid var(--brd);
+        color: var(--txt);
         font-family: var(--mono);
         font-size: 11px;
         padding: 7px 10px;
@@ -251,21 +231,19 @@
         flex-shrink: 0;
         transition: border-color 0.15s;
       }
-      .search-inp:focus {
+      .sinp:focus {
         border-color: var(--blue);
       }
-      .search-inp::placeholder {
+      .sinp::placeholder {
         color: var(--muted);
       }
-
-      /* FIELD LIST */
-      .field-scroll {
+      .fscroll {
         flex: 1;
         overflow-y: auto;
         scrollbar-width: thin;
-        scrollbar-color: var(--border) transparent;
+        scrollbar-color: var(--brd) transparent;
       }
-      .empty-msg {
+      .empty {
         color: var(--muted);
         font-size: 12px;
         text-align: center;
@@ -273,7 +251,7 @@
         line-height: 1.8;
         font-family: var(--mono);
       }
-      .fitem {
+      .fi {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -283,26 +261,26 @@
         transition: background 0.08s;
         user-select: none;
       }
-      .fitem:hover {
-        background: var(--surface2);
+      .fi:hover {
+        background: var(--surf2);
       }
-      .fitem.sel {
+      .fi.sel {
         background: rgba(37, 99, 235, 0.06);
       }
-      .fcheck {
+      .fck {
         width: 14px;
         height: 14px;
-        border: 1px solid var(--border-hi);
+        border: 1px solid var(--brdhi);
         border-radius: 2px;
         flex-shrink: 0;
         position: relative;
         transition: all 0.1s;
       }
-      .fitem.sel .fcheck {
+      .fi.sel .fck {
         background: var(--blue);
         border-color: var(--blue);
       }
-      .fitem.sel .fcheck::after {
+      .fi.sel .fck::after {
         content: "";
         position: absolute;
         left: 3px;
@@ -314,7 +292,7 @@
         border-left: none;
         transform: rotate(45deg);
       }
-      .fpath {
+      .fp {
         font-family: var(--mono);
         font-size: 11px;
         color: var(--muted);
@@ -323,58 +301,56 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .fpath .fleaf {
-        color: var(--text);
+      .fp .lf {
+        color: var(--txt);
       }
-      .fpath .fleaf.attr {
+      .fp .lf.at {
         color: var(--blue);
       }
-      .fcount {
+      .fc {
         font-family: var(--mono);
         font-size: 10px;
-        color: var(--border-hi);
+        color: var(--brdhi);
         flex-shrink: 0;
       }
-
-      /* RIGHT */
-      .right-panel {
+      .rp {
         display: flex;
         flex-direction: column;
         overflow: hidden;
       }
-      .right-header {
-        border-bottom: 1px solid var(--border);
+      .rh {
+        border-bottom: 1px solid var(--brd);
         padding: 0 24px;
         height: 48px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: var(--surface);
+        background: var(--surf);
         flex-shrink: 0;
       }
-      .preview-title {
+      .rtitle {
         font-family: var(--mono);
         font-size: 11px;
         color: var(--muted);
         text-transform: uppercase;
         letter-spacing: 0.1em;
       }
-      .preview-stats {
+      .rstats {
         font-family: var(--mono);
         font-size: 11px;
         color: var(--muted);
       }
-      .preview-stats b {
+      .rstats b {
         color: var(--blue);
         font-weight: normal;
       }
-      .table-wrap {
+      .twrap {
         flex: 1;
         overflow: auto;
         scrollbar-width: thin;
-        scrollbar-color: var(--border) transparent;
+        scrollbar-color: var(--brd) transparent;
       }
-      .preview-empty {
+      .pempty {
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -385,12 +361,10 @@
         font-size: 12px;
         gap: 12px;
       }
-      .preview-empty .icon {
+      .pempty .icon {
         font-size: 36px;
         opacity: 0.25;
       }
-
-      /* TABLE */
       table {
         width: 100%;
         border-collapse: collapse;
@@ -400,16 +374,16 @@
       thead th {
         position: sticky;
         top: 0;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border-hi);
+        background: var(--surf);
+        border-bottom: 1px solid var(--brdhi);
         padding: 9px 14px;
         text-align: left;
         font-weight: 600;
-        color: var(--text);
+        color: var(--txt);
         white-space: nowrap;
         z-index: 10;
       }
-      .th-x {
+      .thx {
         display: inline-block;
         margin-left: 8px;
         color: var(--muted);
@@ -417,14 +391,14 @@
         font-size: 10px;
         font-weight: normal;
       }
-      .th-x:hover {
+      .thx:hover {
         color: var(--red);
       }
       tbody tr {
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid var(--brd);
       }
       tbody tr:hover {
-        background: var(--surface2);
+        background: var(--surf2);
       }
       tbody td {
         padding: 7px 14px;
@@ -434,33 +408,31 @@
         white-space: nowrap;
       }
       tbody td.nil {
-        color: var(--border-hi);
+        color: var(--brdhi);
       }
-
-      /* FOOTER */
       footer {
-        border-top: 1px solid var(--border);
+        border-top: 1px solid var(--brd);
         padding: 0 24px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: var(--surface);
+        background: var(--surf);
         flex-shrink: 0;
       }
-      .footer-info {
+      .fi2 {
         font-family: var(--mono);
         font-size: 10px;
         color: var(--muted);
       }
-      .footer-info b {
+      .fi2 b {
         color: var(--blue);
         font-weight: normal;
       }
-      .export-btn {
+      .ebtn {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: var(--text);
+        background: var(--txt);
         color: #fff;
         border: none;
         font-family: var(--mono);
@@ -475,33 +447,31 @@
           background 0.15s,
           transform 0.1s;
       }
-      .export-btn:hover {
+      .ebtn:hover {
         background: #333;
         transform: translateY(-1px);
       }
-      .export-btn:active {
+      .ebtn:active {
         transform: none;
       }
-      .export-btn:disabled {
-        background: var(--border);
+      .ebtn:disabled {
+        background: var(--brd);
         color: var(--muted);
         cursor: not-allowed;
         transform: none;
       }
-
-      /* TOAST */
       .toast {
         position: fixed;
         bottom: 56px;
         right: 24px;
-        background: var(--surface);
-        border: 1px solid var(--border);
+        background: var(--surf);
+        border: 1px solid var(--brd);
         border-left: 3px solid var(--blue);
         border-radius: 4px;
         padding: 11px 16px;
         font-family: var(--mono);
         font-size: 11px;
-        color: var(--text);
+        color: var(--txt);
         z-index: 999;
         max-width: 320px;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -514,743 +484,592 @@
       .toast.err {
         border-left-color: var(--red);
       }
-
       ::-webkit-scrollbar {
         width: 5px;
         height: 5px;
       }
       ::-webkit-scrollbar-thumb {
-        background: var(--border);
+        background: var(--brd);
         border-radius: 3px;
       }
     </style>
   </head>
   <body>
     <header>
-      <div class="logo">XML<em> → </em>XLS<em> //</em> Extractor</div>
-      <div class="subtitle">
-        Generic field extractor · any depth · any schema
+      <div class="logo">XML<em> → </em>XLS<em> // </em>Extractor</div>
+      <div class="sub">
+        Generic field extractor &middot; any depth &middot; any schema
       </div>
     </header>
-
     <main>
-      <!-- LEFT PANEL -->
-      <div class="left-panel">
-        <!-- Upload -->
-        <div class="panel-section">
-          <div class="section-label">01 / XML Datei</div>
-          <div class="dropzone" id="dropzone">
-            <input
-              type="file"
-              id="fileInput"
-              accept=".xml,text/xml,application/xml"
-            />
-            <div class="dz-icon">⬡</div>
-            <div class="dz-text">
+      <div class="lp">
+        <div class="sec">
+          <div class="lbl">01 / XML Datei</div>
+          <div class="dz" id="dz">
+            <input type="file" id="fi" accept=".xml,text/xml,application/xml" />
+            <div class="dz-icon">&#x2B21;</div>
+            <div class="dz-txt">
               <strong>XML hochladen</strong>Drag &amp; Drop oder klicken
             </div>
           </div>
-          <div class="file-bar" id="fileBar">
-            <div class="file-dot"></div>
-            <span class="file-name" id="fileName"></span>
-            <span class="file-size" id="fileSize"></span>
+          <div class="fbar" id="fbar">
+            <div class="fdot"></div>
+            <span class="fname" id="fname"></span>
+            <span class="fsize" id="fsize"></span>
           </div>
-          <div class="progress-wrap" id="progressWrap">
-            <div class="progress-track">
-              <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <div class="progress-label" id="progressLabel">Analysiere…</div>
+          <div class="pgwrap" id="pgwrap">
+            <div class="pgtrack"><div class="pgfill" id="pgfill"></div></div>
+            <div class="pglbl" id="pglbl">Analysiere&hellip;</div>
           </div>
         </div>
-
-        <!-- Field selector -->
-        <div class="panel-section grow">
-          <div class="section-label">02 / Felder auswählen</div>
-          <div class="tree-controls">
-            <button class="tbtn" id="btnAll" onclick="selectAll()">Alle</button>
-            <button class="tbtn" id="btnNone" onclick="selectNone()">
-              Keine
-            </button>
-            <button class="tbtn on" id="btnFlat" onclick="setView('flat')">
+        <div class="sec grow">
+          <div class="lbl">02 / Felder ausw&auml;hlen</div>
+          <div class="tctrl">
+            <button class="tbtn" id="btnAll" onclick="doAll()">Alle</button>
+            <button class="tbtn" id="btnNone" onclick="doNone()">Keine</button>
+            <button class="tbtn" id="btnFlat" onclick="doView('flat')">
               Flat
             </button>
-            <button class="tbtn" id="btnSort" onclick="setView('az')">
-              A–Z
+            <button class="tbtn" id="btnSort" onclick="doView('az')">
+              A&ndash;Z
             </button>
           </div>
           <input
-            class="search-inp"
-            id="searchInp"
+            class="sinp"
+            id="sinp"
             type="text"
-            placeholder="Felder filtern…"
-            oninput="onSearch(this.value)"
+            placeholder="Felder filtern&hellip;"
+            oninput="doSearch(this.value)"
           />
-          <div class="field-scroll" id="fieldList">
-            <div class="empty-msg">
-              ← XML hochladen<br />um Felder zu erkunden
+          <div class="fscroll" id="flist">
+            <div class="empty">
+              &larr; XML hochladen<br />um Felder zu erkunden
             </div>
           </div>
         </div>
       </div>
-
-      <!-- RIGHT PANEL -->
-      <div class="right-panel">
-        <div class="right-header">
-          <div class="preview-title">Vorschau</div>
-          <div class="preview-stats" id="previewStats">—</div>
+      <div class="rp">
+        <div class="rh">
+          <div class="rtitle">Vorschau</div>
+          <div class="rstats" id="rstats">&mdash;</div>
         </div>
-        <div class="table-wrap" id="tableWrap">
-          <div class="preview-empty">
-            <div class="icon">⬡</div>
-            <div>Felder auswählen für Vorschau</div>
+        <div class="twrap" id="twrap">
+          <div class="pempty">
+            <div class="icon">&#x2B21;</div>
+            <div>Felder ausw&auml;hlen f&uuml;r Vorschau</div>
           </div>
         </div>
       </div>
     </main>
-
     <footer>
-      <div class="footer-info" id="footerInfo">Kein Dokument geladen</div>
-      <button class="export-btn" id="exportBtn" disabled onclick="doExport()">
-        ↓ Excel exportieren
+      <div class="fi2" id="finfo">Kein Dokument geladen</div>
+      <button class="ebtn" id="ebtn" disabled onclick="doExport()">
+        &darr; Excel exportieren
       </button>
     </footer>
-
     <div class="toast" id="toast"></div>
-
     <script>
-      // =============================================================================
-      // STATE
-      // =============================================================================
-      var S = {
-        fields: [], // [{path, leaf, isAttr, count}]
-        selected: new Set(), // selected field paths
-        rows: [], // [{path: value, ...}]
-        view: "flat", // 'flat' | 'az'
-        query: "",
-        fileName: "",
-        rowCount: 0,
-      };
+      // ── STATE ────────────────────────────────────────────────────────────────────
+      var fields = []; // [{path,leaf,isAttr,count}]
+      var selected = new Set();
+      var rows = [];
+      var view = "flat";
+      var query = "";
+      var fileName = "";
 
-      // =============================================================================
-      // INDEXEDDB  (persist across reloads)
-      // =============================================================================
-      function dbOpen() {
-        return new Promise(function (resolve, reject) {
-          var r = indexedDB.open("xmlex3", 1);
-          r.onupgradeneeded = function (e) {
-            e.target.result.createObjectStore("kv");
+      // ── STORAGE (localStorage — simple, synchronous, no async bugs) ──────────────
+      var STORE_KEY = "xmlex_v1";
+
+      function saveToStorage() {
+        try {
+          var data = {
+            fields: fields,
+            selected: Array.from(selected),
+            rows: rows,
+            view: view,
+            fileName: fileName,
           };
-          r.onsuccess = function (e) {
-            resolve(e.target.result);
-          };
-          r.onerror = function () {
-            reject(r.error);
-          };
-        });
-      }
-      function dbWrite(key, val) {
-        dbOpen()
-          .then(function (db) {
-            var tx = db.transaction("kv", "readwrite");
-            tx.objectStore("kv").put(val, key);
-          })
-          .catch(function (e) {
-            console.warn("db write", e);
-          });
-      }
-      function dbRead(key) {
-        return dbOpen()
-          .then(function (db) {
-            return new Promise(function (resolve, reject) {
-              var tx = db.transaction("kv", "readonly");
-              var r = tx.objectStore("kv").get(key);
-              r.onsuccess = function () {
-                resolve(r.result);
-              };
-              r.onerror = function () {
-                reject(r.error);
-              };
-            });
-          })
-          .catch(function () {
-            return null;
-          });
-      }
-      function saveState() {
-        dbWrite("state", {
-          fields: S.fields,
-          selected: Array.from(S.selected),
-          rows: S.rows,
-          view: S.view,
-          fileName: S.fileName,
-          rowCount: S.rowCount,
-        });
+          localStorage.setItem(STORE_KEY, JSON.stringify(data));
+        } catch (e) {
+          console.warn("save failed", e);
+        }
       }
 
-      // =============================================================================
-      // STARTUP  —  restore saved state
-      // =============================================================================
-      dbRead("state").then(function (saved) {
-        if (!saved || !saved.rows || saved.rows.length === 0) return;
-        S.fields = saved.fields || [];
-        S.selected = new Set(saved.selected || []);
-        S.rows = saved.rows || [];
-        S.view = saved.view || "flat";
-        S.fileName = saved.fileName || "";
-        S.rowCount = saved.rowCount || 0;
+      function loadFromStorage() {
+        try {
+          var raw = localStorage.getItem(STORE_KEY);
+          if (!raw) return false;
+          var data = JSON.parse(raw);
+          if (!data || !data.rows || data.rows.length === 0) return false;
+          fields = data.fields || [];
+          selected = new Set(data.selected || []);
+          rows = data.rows || [];
+          view = data.view || "flat";
+          fileName = data.fileName || "";
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
 
-        byId("fileBar").classList.add("show");
-        byId("fileName").textContent = S.fileName + ".xml";
-        byId("fileSize").textContent = S.rowCount + " Datensätze (gecacht)";
+      // ── STARTUP ──────────────────────────────────────────────────────────────────
+      if (loadFromStorage()) {
+        g("fbar").classList.add("show");
+        g("fname").textContent = fileName + ".xml";
+        g("fsize").textContent = rows.length + " Datensätze (gecacht)";
         setFooter();
-        syncButtons();
+        syncBtns();
         renderList();
         renderTable();
-        toast("Letzter Stand wiederhergestellt");
-      });
+        toast(
+          "Letzter Stand wiederhergestellt (" + rows.length + " Datensätze)",
+        );
+      }
 
-      // =============================================================================
-      // FILE HANDLING
-      // =============================================================================
-      var dz = byId("dropzone");
-      byId("fileInput").addEventListener("change", function (e) {
+      // ── FILE HANDLING ─────────────────────────────────────────────────────────────
+      var dzel = g("dz");
+      g("fi").addEventListener("change", function (e) {
         if (e.target.files[0]) loadFile(e.target.files[0]);
       });
-      dz.addEventListener("dragover", function (e) {
+      dzel.addEventListener("dragover", function (e) {
         e.preventDefault();
-        dz.classList.add("over");
+        dzel.classList.add("over");
       });
-      dz.addEventListener("dragleave", function () {
-        dz.classList.remove("over");
+      dzel.addEventListener("dragleave", function () {
+        dzel.classList.remove("over");
       });
-      dz.addEventListener("drop", function (e) {
+      dzel.addEventListener("drop", function (e) {
         e.preventDefault();
-        dz.classList.remove("over");
+        dzel.classList.remove("over");
         if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
       });
 
       function loadFile(file) {
-        S.fileName = file.name.replace(/\.xml$/i, "");
-        byId("fileBar").classList.add("show");
-        byId("fileName").textContent = file.name;
-        byId("fileSize").textContent = fmtBytes(file.size);
-        showProgress(0, "Lese Datei…");
-        var reader = new FileReader();
-        reader.onload = function (e) {
+        fileName = file.name.replace(/\.xml$/i, "");
+        g("fbar").classList.add("show");
+        g("fname").textContent = file.name;
+        g("fsize").textContent = fmtB(file.size);
+        pg(0, "Lese Datei…");
+        var r = new FileReader();
+        r.onload = function (e) {
           parseXML(e.target.result);
         };
-        reader.readAsText(file);
+        r.readAsText(file);
       }
 
-      function fmtBytes(n) {
-        if (n < 1024) return n + " B";
-        if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
-        return (n / 1048576).toFixed(1) + " MB";
+      function fmtB(n) {
+        return n < 1024
+          ? n + " B"
+          : n < 1048576
+            ? (n / 1024).toFixed(1) + " KB"
+            : (n / 1048576).toFixed(1) + " MB";
       }
 
-      // =============================================================================
-      // XML PARSER
-      // =============================================================================
-      function parseXML(text) {
-        showProgress(10, "Parse XML…");
-
-        // --- sanitize common XML issues before parsing ---
-        // 1. unescaped & not part of a valid entity
-        text = text.replace(
-          /&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)/g,
-          "&amp;",
-        );
-
-        // 2. Try strict XML parse first, fall back to HTML parse if it fails
-        var doc = null;
-        var parseErr = null;
-
-        // Attempt 1: strict XML (preserves namespaces, fastest)
-        try {
-          var d1 = new DOMParser().parseFromString(text, "text/xml");
-          var perr = d1.querySelector("parsererror");
-          if (perr) {
-            parseErr = perr.textContent.trim().slice(0, 200);
-          } else {
-            doc = d1;
-          }
-        } catch (ex) {
-          parseErr = ex.message;
-        }
-
-        // Attempt 2: wrap in <html> and parse as HTML (much more forgiving)
-        if (!doc) {
-          try {
-            var wrapped =
-              "<!DOCTYPE html><html><body>" + text + "</body></html>";
-            var d2 = new DOMParser().parseFromString(wrapped, "text/html");
-            // Find the root element (first non-body element child)
-            var body = d2.querySelector("body");
-            if (body && body.children.length > 0) {
-              doc = d2;
-              // Repoint documentElement logic to body.children[0] below
-              doc._xmlRoot = body.children[0];
-            }
-          } catch (ex2) {
-            /* ignore */
-          }
-        }
-
-        if (!doc) {
-          hideProgress();
-          toast(
-            "XML kann nicht gelesen werden: " +
-              (parseErr || "Unbekannter Fehler"),
-            true,
-          );
-          return;
-        }
-
-        // Helper: get the real root (XML root or fallback HTML body child)
-        function getRoot() {
-          return doc._xmlRoot || doc.documentElement;
-        }
-
-        showProgress(25, "Erkunde Struktur…");
-
-        // --- find row anchor (most repeated element at any depth) ---
-        var depthCount = {};
-        scanDepths(getRoot(), 0, depthCount);
-
-        var bestKey = "",
-          bestN = 0;
-        Object.keys(depthCount).forEach(function (k) {
-          if (depthCount[k] > bestN) {
-            bestN = depthCount[k];
-            bestKey = k;
-          }
-        });
-        var rowTag = bestKey ? bestKey.split("@")[0] : getRoot().localName;
-        var rowEls = Array.from(getRoot().getElementsByTagNameNS("*", rowTag));
-
-        showProgress(40, rowEls.length + " Datensätze…");
-
-        // --- detect key/value patterns (e.g. TYPE+VALUE pairs) ---
-        var kvMap = {};
-        if (rowEls.length > 0) detectKV(rowEls[0], kvMap);
-
-        showProgress(55, "Extrahiere Felder…");
-
-        // --- extract rows ---
-        var rows = [];
-        for (var i = 0; i < rowEls.length; i++) {
-          rows.push(extractRow(rowEls[i], kvMap));
-        }
-
-        showProgress(80, "Baue Feldliste…");
-
-        // --- build ordered field list ---
-        var countMap = {},
-          orderMap = {},
-          idx = 0;
-        for (var ri = 0; ri < rows.length; ri++) {
-          var keys = Object.keys(rows[ri]);
-          for (var ki = 0; ki < keys.length; ki++) {
-            var k = keys[ki];
-            if (orderMap[k] === undefined) orderMap[k] = idx++;
-            if (rows[ri][k] !== "") countMap[k] = (countMap[k] || 0) + 1;
-            else if (countMap[k] === undefined) countMap[k] = 0;
-          }
-        }
-
-        var fields = Object.keys(countMap)
-          .sort(function (a, b) {
-            return (orderMap[a] || 0) - (orderMap[b] || 0);
-          })
-          .map(function (path) {
-            var parts = path.split("/");
-            var leaf = parts[parts.length - 1];
-            var isAttr = leaf.charAt(0) === "@";
-            return {
-              path: path,
-              leaf: isAttr ? leaf.slice(1) : leaf,
-              isAttr: isAttr,
-              count: countMap[path],
-            };
-          });
-
-        // --- update state ---
-        S.fields = fields;
-        S.selected = new Set();
-        S.rows = rows;
-        S.rowCount = rows.length;
-
-        showProgress(100, "Fertig!");
-        setTimeout(hideProgress, 700);
-
-        setFooter();
-        syncButtons();
-        renderList();
-        renderTable();
-        byId("exportBtn").disabled = true;
-        toast(
-          S.rowCount + " Datensätze, " + S.fields.length + " Felder erkannt",
-        );
-        saveState();
+      // ── XML PARSER ────────────────────────────────────────────────────────────────
+      function tn(el) {
+        // Always return uppercase tag name, works for both XML and HTML-parsed docs
+        return (el.localName || el.tagName || "").toUpperCase();
       }
 
-      // depth-count helper
-      function scanDepths(node, depth, map) {
-        if (node.nodeType !== 1) return;
-        var k = node.localName + "@" + depth;
-        map[k] = (map[k] || 0) + 1;
-        for (var i = 0; i < node.children.length; i++) {
-          scanDepths(node.children[i], depth + 1, map);
-        }
+      function byTag(parent, tag) {
+        // Find children by tag, case-insensitive
+        var r = [];
+        var all = parent.getElementsByTagName(tag);
+        if (all.length) return Array.from(all);
+        all = parent.getElementsByTagName(tag.toLowerCase());
+        if (all.length) return Array.from(all);
+        return r;
       }
 
-      // detect KV pattern: sibling elements that have 2+ children
-      // where the first child is a discriminating key (different values across siblings)
-      function detectKV(node, kvMap) {
-        if (node.nodeType !== 1) return;
-        var grouped = groupChildren(node);
-        var tags = Object.keys(grouped);
-        for (var ti = 0; ti < tags.length; ti++) {
-          var tag = tags[ti];
-          var sibs = grouped[tag];
-          if (sibs.length >= 2 && sibs[0].children.length >= 2) {
-            var keyTag = sibs[0].children[0].localName;
-            var valTag = sibs[0].children[1].localName;
-            var uniq = new Set();
-            for (var si = 0; si < sibs.length; si++) {
-              var kEl = sibs[si].getElementsByTagNameNS("*", keyTag)[0];
-              if (kEl) uniq.add(kEl.textContent.trim());
-            }
-            if (uniq.size > 1) kvMap[tag] = { keyTag: keyTag, valTag: valTag };
-          }
-          detectKV(sibs[0], kvMap);
-        }
-      }
-
-      function groupChildren(node) {
+      function groupKids(node) {
         var g = {};
         for (var i = 0; i < node.children.length; i++) {
-          var t = node.children[i].localName;
+          var t = tn(node.children[i]);
           if (!g[t]) g[t] = [];
           g[t].push(node.children[i]);
         }
         return g;
       }
 
-      function extractRow(rowEl, kvMap) {
-        var row = {};
-        walkNode(rowEl, "", row, kvMap);
-        return row;
-      }
+      function parseXML(text) {
+        pg(10, "Parse XML…");
 
-      function walkNode(node, path, row, kvMap) {
-        if (node.nodeType !== 1) return;
-        var tag = node.localName.toUpperCase();
-        var curPath = path ? path + "/" + tag : tag;
+        // Fix bare & not part of XML entities
+        text = text.replace(
+          /&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)/g,
+          "&amp;",
+        );
 
-        // XML attributes (skip namespace declarations)
-        for (var ai = 0; ai < node.attributes.length; ai++) {
-          var a = node.attributes[ai];
-          if (a.name.indexOf(":") === -1) {
-            row[curPath + "/@" + a.name.toUpperCase()] = a.value;
-          }
+        // Parse: try strict XML, fall back to innerHTML repair
+        var root = null;
+        try {
+          var d = new DOMParser().parseFromString(text, "text/xml");
+          if (!d.querySelector("parsererror")) root = d.documentElement;
+        } catch (e) {}
+
+        if (!root) {
+          try {
+            var div = document.createElement("div");
+            div.innerHTML = text
+              .replace(/<\?xml[^?]*\?>/gi, "")
+              .replace(/<!DOCTYPE[^>]*>/gi, "")
+              .trim();
+            if (div.children.length) root = div.children[0];
+          } catch (e) {}
         }
 
-        // Leaf node
-        if (node.children.length === 0) {
-          row[curPath] = node.textContent.trim();
+        if (!root) {
+          pg(0, "");
+          hidePg();
+          toast("XML konnte nicht gelesen werden.", true);
           return;
         }
 
-        var grouped = groupChildren(node);
-        var childTags = Object.keys(grouped);
+        pg(25, "Erkunde Struktur…");
 
-        for (var cti = 0; cti < childTags.length; cti++) {
-          var childTag = childTags[cti];
-          var sibs = grouped[childTag];
-          var childTagUC = childTag.toUpperCase();
+        // Find row anchor = most repeated element
+        var dc = {};
+        (function scanD(n, d) {
+          if (n.nodeType !== 1) return;
+          var k = tn(n) + "@" + d;
+          dc[k] = (dc[k] || 0) + 1;
+          for (var i = 0; i < n.children.length; i++)
+            scanD(n.children[i], d + 1);
+        })(root, 0);
 
-          if (sibs.length >= 2 && kvMap[childTag]) {
-            // KV pivot: each sibling becomes a named column
-            var kv = kvMap[childTag];
-            for (var si = 0; si < sibs.length; si++) {
-              var sib = sibs[si];
-              var kEl = sib.getElementsByTagNameNS("*", kv.keyTag)[0];
-              var vEl = sib.getElementsByTagNameNS("*", kv.valTag)[0];
-              if (!kEl) continue;
-              var keyName = kEl.textContent
-                .trim()
-                .replace(/[\/\\?*\[\]:]/g, "_");
-              var colPath = curPath + "/" + childTagUC + "[" + keyName + "]";
-              row[colPath] = vEl ? vEl.textContent.trim() : "";
-              // walk any extra children in this sibling
-              for (var sci = 0; sci < sib.children.length; sci++) {
-                var sc = sib.children[sci];
-                if (
-                  sc.localName.toUpperCase() !== kv.keyTag.toUpperCase() &&
-                  sc.localName.toUpperCase() !== kv.valTag.toUpperCase()
-                ) {
-                  walkNode(
-                    sc,
-                    curPath + "/" + childTagUC + "[" + keyName + "]",
-                    row,
-                    kvMap,
-                  );
+        var bestK = "",
+          bestN = 0;
+        Object.keys(dc).forEach(function (k) {
+          if (dc[k] > bestN) {
+            bestN = dc[k];
+            bestK = k;
+          }
+        });
+        var rowTag = bestK ? bestK.split("@")[0] : tn(root);
+        var rowEls = byTag(root, rowTag);
+
+        pg(40, rowEls.length + " Datensätze…");
+
+        // Detect KEY/VALUE patterns (e.g. TYPE+VALUE sibling pairs)
+        var kvMap = {};
+        function detectKV(node) {
+          var gr = groupKids(node);
+          Object.keys(gr).forEach(function (tag) {
+            var sibs = gr[tag];
+            if (sibs.length >= 2 && sibs[0].children.length >= 2) {
+              var kTag = tn(sibs[0].children[0]);
+              var vTag = tn(sibs[0].children[1]);
+              var keys = new Set();
+              sibs.forEach(function (s) {
+                var el = byTag(s, kTag)[0];
+                if (el) keys.add(el.textContent.trim());
+              });
+              if (keys.size > 1) kvMap[tag] = { k: kTag, v: vTag };
+            }
+            detectKV(sibs[0]);
+          });
+        }
+        if (rowEls.length) detectKV(rowEls[0]);
+
+        pg(55, "Extrahiere Felder…");
+
+        // Extract flat row objects
+        function walkNode(node, path, row) {
+          if (node.nodeType !== 1) return;
+          var tag = tn(node);
+          var cur = path ? path + "/" + tag : tag;
+          // attributes
+          for (var ai = 0; ai < node.attributes.length; ai++) {
+            var a = node.attributes[ai];
+            if (a.name.indexOf(":") === -1)
+              row[cur + "/@" + a.name.toUpperCase()] = a.value;
+          }
+          if (node.children.length === 0) {
+            row[cur] = node.textContent.trim();
+            return;
+          }
+          var gr = groupKids(node);
+          Object.keys(gr).forEach(function (ctag) {
+            var sibs = gr[ctag];
+            if (sibs.length >= 2 && kvMap[ctag]) {
+              var kv = kvMap[ctag];
+              sibs.forEach(function (sib) {
+                var kEl = byTag(sib, kv.k)[0];
+                var vEl = byTag(sib, kv.v)[0];
+                if (!kEl) return;
+                var keyName = kEl.textContent
+                  .trim()
+                  .replace(/[\/\\?*\[\]:]/g, "_");
+                var col = cur + "/" + ctag + "[" + keyName + "]";
+                row[col] = vEl ? vEl.textContent.trim() : "";
+                for (var i = 0; i < sib.children.length; i++) {
+                  var sc = sib.children[i];
+                  var st = tn(sc);
+                  if (st !== kv.k && st !== kv.v)
+                    walkNode(sc, cur + "/" + ctag + "[" + keyName + "]", row);
                 }
-              }
+              });
+            } else if (sibs.length >= 2) {
+              sibs.forEach(function (s, i) {
+                walkNode(s, cur + "/" + ctag + "[" + (i + 1) + "]", row);
+              });
+            } else {
+              walkNode(sibs[0], cur, row);
             }
-          } else if (sibs.length >= 2) {
-            // Indexed repeating elements
-            for (var ri = 0; ri < sibs.length; ri++) {
-              walkNode(
-                sibs[ri],
-                curPath + "/" + childTagUC + "[" + (ri + 1) + "]",
-                row,
-                kvMap,
-              );
-            }
-          } else {
-            walkNode(sibs[0], curPath, row, kvMap);
-          }
+          });
         }
+
+        var newRows = [];
+        for (var i = 0; i < rowEls.length; i++) {
+          var row = {};
+          walkNode(rowEls[i], "", row);
+          newRows.push(row);
+        }
+
+        pg(82, "Baue Feldliste…");
+
+        // Build field list in document order
+        var cmap = {},
+          omap = {},
+          oi = 0;
+        newRows.forEach(function (row) {
+          Object.keys(row).forEach(function (k) {
+            if (omap[k] === undefined) omap[k] = oi++;
+            if (row[k] !== "") cmap[k] = (cmap[k] || 0) + 1;
+            else if (cmap[k] === undefined) cmap[k] = 0;
+          });
+        });
+
+        fields = Object.keys(cmap)
+          .sort(function (a, b) {
+            return (omap[a] || 0) - (omap[b] || 0);
+          })
+          .map(function (path) {
+            var parts = path.split("/");
+            var lf = parts[parts.length - 1];
+            var isA = lf.charAt(0) === "@";
+            return {
+              path: path,
+              leaf: isA ? lf.slice(1) : lf,
+              isAttr: isA,
+              count: cmap[path],
+            };
+          });
+        rows = newRows;
+        selected = new Set();
+
+        pg(100, "Fertig!");
+        setTimeout(hidePg, 700);
+        setFooter();
+        syncBtns();
+        renderList();
+        renderTable();
+        g("ebtn").disabled = true;
+        toast(
+          rows.length + " Datensätze, " + fields.length + " Felder erkannt",
+        );
+        saveToStorage();
       }
 
-      // =============================================================================
-      // FIELD LIST
-      // =============================================================================
+      // ── FIELD LIST ────────────────────────────────────────────────────────────────
       function renderList() {
-        var container = byId("fieldList");
-        if (S.fields.length === 0) {
-          container.innerHTML =
-            '<div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>';
+        var el = g("flist");
+        if (!fields.length) {
+          el.innerHTML =
+            '<div class="empty">&larr; XML hochladen<br>um Felder zu erkunden</div>';
           return;
         }
-
-        var list = S.fields.slice();
-
-        if (S.query) {
-          var q = S.query.toLowerCase();
+        var list = fields.slice();
+        if (query) {
+          var q = query.toLowerCase();
           list = list.filter(function (f) {
             return f.path.toLowerCase().indexOf(q) !== -1;
           });
         }
-        if (S.view === "az") {
+        if (view === "az")
           list.sort(function (a, b) {
             return a.path.localeCompare(b.path);
           });
-        }
-
-        if (list.length === 0) {
-          container.innerHTML = '<div class="empty-msg">Keine Treffer</div>';
+        if (!list.length) {
+          el.innerHTML = '<div class="empty">Keine Treffer</div>';
           return;
         }
-
-        var html = "";
-        for (var i = 0; i < list.length; i++) {
-          var f = list[i];
-          var sel = S.selected.has(f.path);
-
-          // Build path display: grey prefix, colored leaf
-          var kvM = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
+        var h = "";
+        list.forEach(function (f) {
+          var sel = selected.has(f.path);
+          var kv = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
           var pre, lf;
-          if (kvM) {
-            pre = kvM[1].replace(/\/$/, "");
-            lf = kvM[2];
+          if (kv) {
+            pre = kv[1].replace(/\/$/, "");
+            lf = kv[2];
           } else {
-            var parts = f.path.split("/");
-            pre = parts.slice(0, -1).join("/");
-            lf = parts[parts.length - 1];
+            var p = f.path.split("/");
+            pre = p.slice(0, -1).join("/");
+            lf = p[p.length - 1];
           }
-          var leafCls = f.isAttr ? "fleaf attr" : "fleaf";
-          var display = pre
+          var lfc = f.isAttr ? "lf at" : "lf";
+          var dp = pre
             ? '<span style="color:var(--muted)">' +
               he(pre) +
               '/</span><span class="' +
-              leafCls +
+              lfc +
               '">' +
               he(lf) +
               "</span>"
-            : '<span class="' + leafCls + '">' + he(lf) + "</span>";
-
-          // Safe onclick: encode path into data attribute, use onclick index
-          html +=
-            '<div class="fitem' +
+            : '<span class="' + lfc + '">' + he(lf) + "</span>";
+          h +=
+            '<div class="fi' +
             (sel ? " sel" : "") +
             '" data-path="' +
             he(f.path) +
-            '" onclick="toggleIdx(this)">';
-          html += '<div class="fcheck"></div>';
-          html +=
-            '<div class="fpath" title="' +
+            '" onclick="toggle(this)">' +
+            '<div class="fck"></div>' +
+            '<div class="fp" title="' +
             he(f.path) +
             '">' +
-            display +
+            dp +
+            "</div>" +
+            '<div class="fc">' +
+            f.count +
+            "</div>" +
             "</div>";
-          html += '<div class="fcount">' + f.count + "</div>";
-          html += "</div>";
-        }
-        container.innerHTML = html;
+        });
+        el.innerHTML = h;
       }
 
-      function toggleIdx(el) {
-        var path = el.getAttribute("data-path");
-        if (!path) return;
-        if (S.selected.has(path)) S.selected.delete(path);
-        else S.selected.add(path);
-        byId("exportBtn").disabled = S.selected.size === 0;
-        syncButtons();
+      function toggle(el) {
+        var p = el.getAttribute("data-path");
+        if (!p) return;
+        if (selected.has(p)) selected.delete(p);
+        else selected.add(p);
+        g("ebtn").disabled = selected.size === 0;
+        syncBtns();
         renderList();
         renderTable();
-        saveState();
+        saveToStorage();
       }
 
-      function selectAll() {
-        for (var i = 0; i < S.fields.length; i++) {
-          S.selected.add(S.fields[i].path);
-        }
-        // directly mark Alle as active, Keine as inactive
-        byId("btnAll").className = "tbtn on";
-        byId("btnNone").className = "tbtn";
-        byId("exportBtn").disabled = false;
+      function doAll() {
+        fields.forEach(function (f) {
+          selected.add(f.path);
+        });
+        g("ebtn").disabled = false;
+        syncBtns();
         renderList();
         renderTable();
-        saveState();
+        saveToStorage();
       }
 
-      function selectNone() {
-        S.selected.clear();
-        // directly mark Keine as active, Alle as inactive
-        byId("btnAll").className = "tbtn";
-        byId("btnNone").className = "tbtn on";
-        byId("exportBtn").disabled = true;
+      function doNone() {
+        selected.clear();
+        g("ebtn").disabled = true;
+        syncBtns();
         renderList();
         renderTable();
-        saveState();
+        saveToStorage();
       }
 
-      function setView(v) {
-        S.view = v;
-        syncButtons();
+      function doView(v) {
+        view = v;
+        syncBtns();
         renderList();
-        saveState();
+        saveToStorage();
       }
 
-      function onSearch(q) {
-        S.query = q;
+      function doSearch(q) {
+        query = q;
         renderList();
       }
 
-      function syncButtons() {
-        var selCount = 0;
-        for (var i = 0; i < S.fields.length; i++) {
-          if (S.selected.has(S.fields[i].path)) selCount++;
-        }
-        var hasData = S.fields.length > 0;
-        var allSel = hasData && selCount === S.fields.length;
-        var noneSel = !hasData || selCount === 0;
-
-        // force direct className to avoid any toggle race
-        byId("btnAll").className = "tbtn" + (allSel ? " on" : "");
-        byId("btnNone").className = "tbtn" + (noneSel ? " on" : "");
-        byId("btnFlat").className = "tbtn" + (S.view === "flat" ? " on" : "");
-        byId("btnSort").className = "tbtn" + (S.view === "az" ? " on" : "");
+      function syncBtns() {
+        var selN = 0;
+        fields.forEach(function (f) {
+          if (selected.has(f.path)) selN++;
+        });
+        var allOn = fields.length > 0 && selN === fields.length;
+        var noneOn = selN === 0;
+        g("btnAll").className = "tbtn" + (allOn ? " on" : "");
+        g("btnNone").className = "tbtn" + (noneOn ? " on" : "");
+        g("btnFlat").className = "tbtn" + (view === "flat" ? " on" : "");
+        g("btnSort").className = "tbtn" + (view === "az" ? " on" : "");
       }
 
-      // =============================================================================
-      // PREVIEW TABLE
-      // =============================================================================
-      var PREVIEW = 200;
-
+      // ── PREVIEW TABLE ─────────────────────────────────────────────────────────────
+      var PLIMIT = 200;
       function renderTable() {
-        var wrap = byId("tableWrap");
-        var stats = byId("previewStats");
-
-        if (S.selected.size === 0) {
+        var wrap = g("twrap");
+        var stats = g("rstats");
+        if (!selected.size) {
           wrap.innerHTML =
-            '<div class="preview-empty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>';
-          stats.textContent = "—";
+            '<div class="pempty"><div class="icon">&#x2B21;</div><div>Felder auswählen für Vorschau</div></div>';
+          stats.innerHTML = "&mdash;";
           return;
         }
-
-        var cols = Array.from(S.selected);
-        var labels = cols.map(pathLabel);
-        var rows = S.rows.slice(0, PREVIEW);
-
+        var cols = Array.from(selected);
+        var labels = cols.map(plabel);
+        var rws = rows.slice(0, PLIMIT);
         var th = "";
-        for (var ci = 0; ci < cols.length; ci++) {
+        cols.forEach(function (c, i) {
           th +=
             "<th>" +
-            he(labels[ci]) +
-            '<span class="th-x" data-path="' +
-            he(cols[ci]) +
-            '" onclick="removeCol(this)" title="Entfernen">✕</span></th>';
-        }
-
+            he(labels[i]) +
+            '<span class="thx" data-path="' +
+            he(c) +
+            '" onclick="rmCol(this)" title="Entfernen">✕</span></th>';
+        });
         var tb = "";
-        for (var ri = 0; ri < rows.length; ri++) {
+        rws.forEach(function (row) {
           tb += "<tr>";
-          for (var ci2 = 0; ci2 < cols.length; ci2++) {
-            var v = rows[ri][cols[ci2]];
-            if (v !== undefined && v !== "") {
-              tb += '<td title="' + he(v) + '">' + he(v) + "</td>";
-            } else {
-              tb += '<td class="nil">—</td>';
-            }
-          }
+          cols.forEach(function (c) {
+            var v = row[c];
+            tb +=
+              v !== undefined && v !== ""
+                ? '<td title="' + he(v) + '">' + he(v) + "</td>"
+                : '<td class="nil">—</td>';
+          });
           tb += "</tr>";
-        }
-
+        });
         wrap.innerHTML =
           "<table><thead><tr>" +
           th +
           "</tr></thead><tbody>" +
           tb +
           "</tbody></table>";
-
-        var total = S.rows.length;
         stats.innerHTML =
           "<b>" +
-          total +
-          "</b> Zeilen · <b>" +
+          rows.length +
+          "</b> Zeilen &middot; <b>" +
           cols.length +
           "</b> Spalten" +
-          (total > PREVIEW ? " · Vorschau: " + PREVIEW : "");
+          (rows.length > PLIMIT ? " &middot; Vorschau: " + PLIMIT : "");
       }
 
-      function removeCol(el) {
-        var path = el.getAttribute("data-path");
-        S.selected.delete(path);
-        byId("exportBtn").disabled = S.selected.size === 0;
-        syncButtons();
+      function rmCol(el) {
+        var p = el.getAttribute("data-path");
+        selected.delete(p);
+        g("ebtn").disabled = selected.size === 0;
+        syncBtns();
         renderList();
         renderTable();
-        saveState();
+        saveToStorage();
       }
 
-      // =============================================================================
-      // EXPORT
-      // =============================================================================
+      // ── EXPORT ────────────────────────────────────────────────────────────────────
       function doExport() {
-        if (S.selected.size === 0 || S.rows.length === 0) return;
-
-        var cols = Array.from(S.selected);
-        var labels = cols.map(pathLabel);
+        if (!selected.size || !rows.length) return;
+        var cols = Array.from(selected);
+        var labels = cols.map(plabel);
         var data = [labels];
-
-        for (var ri = 0; ri < S.rows.length; ri++) {
-          var row = [];
-          for (var ci = 0; ci < cols.length; ci++) {
-            var v = S.rows[ri][cols[ci]];
-            row.push(v !== undefined ? v : "");
-          }
-          data.push(row);
-        }
-
+        rows.forEach(function (row) {
+          data.push(
+            cols.map(function (c) {
+              return row[c] !== undefined ? row[c] : "";
+            }),
+          );
+        });
         var ws = XLSX.utils.aoa_to_sheet(data);
-
-        // header styling
-        var range = XLSX.utils.decode_range(ws["!ref"]);
-        for (var c = range.s.c; c <= range.e.c; c++) {
+        var rng = XLSX.utils.decode_range(ws["!ref"]);
+        for (var c = rng.s.c; c <= rng.e.c; c++) {
           var cell = ws[XLSX.utils.encode_cell({ r: 0, c: c })];
           if (cell)
             cell.s = {
@@ -1259,33 +1078,28 @@
               alignment: { horizontal: "left" },
             };
         }
-
-        // column widths
         ws["!cols"] = labels.map(function (lbl, ci) {
-          var max = lbl.length;
-          for (var ri = 0; ri < S.rows.length; ri++) {
-            var v = S.rows[ri][cols[ci]];
-            if (v && v.length > max) max = v.length;
-          }
-          return { wch: Math.min(max + 2, 50) };
+          var mx = lbl.length;
+          rows.forEach(function (row) {
+            var v = row[cols[ci]];
+            if (v && v.length > mx) mx = v.length;
+          });
+          return { wch: Math.min(mx + 2, 50) };
         });
-
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Extraktion");
         XLSX.writeFile(
           wb,
-          (S.fileName || "export") +
+          (fileName || "export") +
             "_" +
             new Date().toISOString().slice(0, 10) +
             ".xlsx",
         );
-        toast(S.rows.length + " Zeilen exportiert");
+        toast(rows.length + " Zeilen exportiert");
       }
 
-      // =============================================================================
-      // UTILS
-      // =============================================================================
-      function byId(id) {
+      // ── UTILS ─────────────────────────────────────────────────────────────────────
+      function g(id) {
         return document.getElementById(id);
       }
 
@@ -1298,37 +1112,38 @@
           .replace(/'/g, "&#39;");
       }
 
-      function pathLabel(path) {
+      function plabel(path) {
         var m = path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/);
         if (m) return m[2] ? m[1] + " / " + m[2] : m[1];
         return path.split("/").pop().replace("@", "");
       }
 
-      function showProgress(pct, label) {
-        byId("progressWrap").classList.add("show");
-        byId("progressFill").style.width = pct + "%";
-        byId("progressLabel").textContent = label;
+      function pg(pct, lbl) {
+        g("pgwrap").classList.add("show");
+        g("pgfill").style.width = pct + "%";
+        g("pgfill").style.width = pct + "%";
+        g("pglbl").textContent = lbl;
       }
-      function hideProgress() {
-        byId("progressWrap").classList.remove("show");
+      function hidePg() {
+        g("pgwrap").classList.remove("show");
       }
 
       function setFooter() {
-        byId("footerInfo").innerHTML =
+        g("finfo").innerHTML =
           "<b>" +
-          S.rowCount +
-          "</b> Datensätze · <b>" +
-          S.fields.length +
+          rows.length +
+          "</b> Datensätze &middot; <b>" +
+          fields.length +
           "</b> Felder erkannt";
       }
 
-      var _toastTimer;
+      var _tt;
       function toast(msg, isErr) {
-        var el = byId("toast");
+        var el = g("toast");
         el.textContent = msg;
         el.className = "toast show" + (isErr ? " err" : "");
-        clearTimeout(_toastTimer);
-        _toastTimer = setTimeout(function () {
+        clearTimeout(_tt);
+        _tt = setTimeout(function () {
           el.classList.remove("show");
         }, 3000);
       }
