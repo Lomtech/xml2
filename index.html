@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap");
+
       *,
       *::before,
       *::after {
@@ -14,59 +15,67 @@
         margin: 0;
         padding: 0;
       }
+
       :root {
         --bg: #f5f5f3;
         --surface: #ffffff;
         --surface2: #f0f0ee;
         --border: #ddddd9;
-        --border-active: #c0c0bc;
-        --accent: #1a1a1a;
-        --accent2: #2563eb;
+        --border-hi: #c0c0bc;
+        --blue: #2563eb;
         --text: #1a1a1a;
         --muted: #8a8a85;
-        --danger: #dc2626;
+        --red: #dc2626;
         --mono: "IBM Plex Mono", monospace;
         --sans: "IBM Plex Sans", sans-serif;
       }
+
       body {
         background: var(--bg);
         color: var(--text);
         font-family: var(--sans);
         font-size: 14px;
-        min-height: 100vh;
+        height: 100vh;
         display: grid;
-        grid-template-rows: auto 1fr auto;
+        grid-template-rows: 57px 1fr 41px;
+        overflow: hidden;
       }
+
+      /* HEADER */
       header {
         border-bottom: 1px solid var(--border);
-        padding: 18px 32px;
+        padding: 0 32px;
         display: flex;
         align-items: center;
-        gap: 16px;
         background: var(--surface);
+        flex-shrink: 0;
       }
       .logo {
         font-family: var(--mono);
         font-weight: 600;
         font-size: 13px;
-        color: var(--text);
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
-      .logo span {
+      .logo em {
         color: var(--muted);
+        font-style: normal;
       }
       .subtitle {
         color: var(--muted);
         font-size: 12px;
         font-family: var(--mono);
+        margin-left: 16px;
       }
+
+      /* MAIN */
       main {
         display: grid;
         grid-template-columns: 380px 1fr;
-        height: calc(100vh - 57px - 41px);
         overflow: hidden;
       }
+
+      /* LEFT */
       .left-panel {
         border-right: 1px solid var(--border);
         display: flex;
@@ -75,14 +84,15 @@
       }
       .panel-section {
         border-bottom: 1px solid var(--border);
-        padding: 20px;
+        padding: 18px 20px;
+        flex-shrink: 0;
       }
-      .panel-section:last-child {
-        border-bottom: none;
+      .panel-section.grow {
         flex: 1;
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        border-bottom: none;
       }
       .section-label {
         font-family: var(--mono);
@@ -90,68 +100,75 @@
         text-transform: uppercase;
         letter-spacing: 0.12em;
         color: var(--muted);
-        margin-bottom: 12px;
+        margin-bottom: 10px;
       }
+
+      /* DROPZONE */
       .dropzone {
-        border: 1px dashed var(--border-active);
+        border: 1px dashed var(--border-hi);
         background: var(--surface2);
         border-radius: 4px;
-        padding: 28px 20px;
+        padding: 22px 16px;
         text-align: center;
         cursor: pointer;
-        transition: all 0.15s;
         position: relative;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
       }
       .dropzone:hover,
-      .dropzone.drag-over {
-        border-color: var(--accent2);
+      .dropzone.over {
+        border-color: var(--blue);
         background: rgba(37, 99, 235, 0.03);
       }
-      .dropzone input {
+      .dropzone input[type="file"] {
         position: absolute;
         inset: 0;
         opacity: 0;
         cursor: pointer;
         width: 100%;
+        height: 100%;
       }
-      .dropzone-icon {
-        font-size: 28px;
-        margin-bottom: 8px;
+      .dz-icon {
+        font-size: 24px;
       }
-      .dropzone-text {
+      .dz-text {
         color: var(--muted);
         font-size: 12px;
-        line-height: 1.6;
+        margin-top: 6px;
+        line-height: 1.5;
       }
-      .dropzone-text strong {
-        color: var(--text);
+      .dz-text strong {
         display: block;
+        color: var(--text);
         font-size: 13px;
-        margin-bottom: 4px;
       }
-      .file-info {
+
+      /* FILE INFO */
+      .file-bar {
         display: none;
         align-items: center;
         gap: 10px;
         background: var(--surface2);
         border: 1px solid var(--border);
         border-radius: 4px;
-        padding: 12px 14px;
+        padding: 10px 14px;
         font-family: var(--mono);
         font-size: 11px;
+        margin-top: 10px;
       }
-      .file-info.visible {
+      .file-bar.show {
         display: flex;
       }
       .file-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: var(--accent2);
+        background: var(--blue);
         flex-shrink: 0;
       }
       .file-name {
-        color: var(--accent2);
+        color: var(--blue);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -161,53 +178,42 @@
         color: var(--muted);
         flex-shrink: 0;
       }
-      .parse-progress {
+
+      /* PROGRESS */
+      .progress-wrap {
         display: none;
         margin-top: 10px;
       }
-      .parse-progress.visible {
+      .progress-wrap.show {
         display: block;
       }
-      .progress-bar-track {
+      .progress-track {
         height: 2px;
         background: var(--border);
         border-radius: 1px;
         overflow: hidden;
       }
-      .progress-bar-fill {
+      .progress-fill {
         height: 100%;
-        background: var(--accent2);
-        width: 0%;
+        background: var(--blue);
+        width: 0;
         transition: width 0.2s;
-        border-radius: 1px;
       }
-      .progress-text {
+      .progress-label {
         font-family: var(--mono);
         font-size: 10px;
         color: var(--muted);
-        margin-top: 6px;
+        margin-top: 5px;
       }
-      .field-tree-wrap {
-        flex: 1;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: var(--border) transparent;
-      }
-      .empty-state {
-        color: var(--muted);
-        font-size: 12px;
-        text-align: center;
-        padding: 32px 16px;
-        line-height: 1.8;
-        font-family: var(--mono);
-      }
+
+      /* TREE CONTROLS */
       .tree-controls {
         display: flex;
-        gap: 6px;
-        margin-bottom: 10px;
+        gap: 5px;
         flex-shrink: 0;
+        margin-bottom: 8px;
       }
-      .tree-btn {
+      .tbtn {
         background: var(--surface2);
         border: 1px solid var(--border);
         color: var(--muted);
@@ -220,16 +226,18 @@
         text-transform: uppercase;
         letter-spacing: 0.06em;
       }
-      .tree-btn:hover {
+      .tbtn:hover {
         color: var(--text);
-        border-color: var(--border-active);
+        border-color: var(--border-hi);
       }
-      .tree-btn.active {
-        color: var(--accent2);
-        border-color: var(--accent2);
+      .tbtn.on {
+        color: var(--blue);
+        border-color: var(--blue);
         background: rgba(37, 99, 235, 0.06);
       }
-      .search-field {
+
+      /* SEARCH */
+      .search-inp {
         width: 100%;
         background: var(--surface2);
         border: 1px solid var(--border);
@@ -239,45 +247,62 @@
         padding: 7px 10px;
         border-radius: 3px;
         outline: none;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
+        flex-shrink: 0;
         transition: border-color 0.15s;
       }
-      .search-field:focus {
-        border-color: var(--accent2);
+      .search-inp:focus {
+        border-color: var(--blue);
       }
-      .search-field::placeholder {
+      .search-inp::placeholder {
         color: var(--muted);
       }
-      .field-item {
+
+      /* FIELD LIST */
+      .field-scroll {
+        flex: 1;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .empty-msg {
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+        padding: 32px 16px;
+        line-height: 1.8;
+        font-family: var(--mono);
+      }
+      .fitem {
         display: flex;
         align-items: center;
         gap: 8px;
         padding: 5px 8px;
         border-radius: 3px;
         cursor: pointer;
-        transition: background 0.1s;
+        transition: background 0.08s;
         user-select: none;
       }
-      .field-item:hover {
+      .fitem:hover {
         background: var(--surface2);
       }
-      .field-item.selected {
+      .fitem.sel {
         background: rgba(37, 99, 235, 0.06);
       }
-      .field-checkbox {
+      .fcheck {
         width: 14px;
         height: 14px;
-        border: 1px solid var(--border-active);
+        border: 1px solid var(--border-hi);
         border-radius: 2px;
         flex-shrink: 0;
         position: relative;
         transition: all 0.1s;
       }
-      .field-item.selected .field-checkbox {
-        background: var(--accent2);
-        border-color: var(--accent2);
+      .fitem.sel .fcheck {
+        background: var(--blue);
+        border-color: var(--blue);
       }
-      .field-item.selected .field-checkbox::after {
+      .fitem.sel .fcheck::after {
         content: "";
         position: absolute;
         left: 3px;
@@ -289,7 +314,7 @@
         border-left: none;
         transform: rotate(45deg);
       }
-      .field-path {
+      .fpath {
         font-family: var(--mono);
         font-size: 11px;
         color: var(--muted);
@@ -298,18 +323,20 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .field-path .leaf {
+      .fpath .fleaf {
         color: var(--text);
       }
-      .field-path .leaf.attr {
-        color: var(--accent2);
+      .fpath .fleaf.attr {
+        color: var(--blue);
       }
-      .field-count {
+      .fcount {
         font-family: var(--mono);
         font-size: 10px;
-        color: var(--border-active);
+        color: var(--border-hi);
         flex-shrink: 0;
       }
+
+      /* RIGHT */
       .right-panel {
         display: flex;
         flex-direction: column;
@@ -317,12 +344,13 @@
       }
       .right-header {
         border-bottom: 1px solid var(--border);
-        padding: 16px 24px;
+        padding: 0 24px;
+        height: 48px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        flex-shrink: 0;
         background: var(--surface);
+        flex-shrink: 0;
       }
       .preview-title {
         font-family: var(--mono);
@@ -336,8 +364,9 @@
         font-size: 11px;
         color: var(--muted);
       }
-      .preview-stats span {
-        color: var(--accent2);
+      .preview-stats b {
+        color: var(--blue);
+        font-weight: normal;
       }
       .table-wrap {
         flex: 1;
@@ -356,10 +385,12 @@
         font-size: 12px;
         gap: 12px;
       }
-      .preview-empty .big-icon {
-        font-size: 40px;
-        opacity: 0.3;
+      .preview-empty .icon {
+        font-size: 36px;
+        opacity: 0.25;
       }
+
+      /* TABLE */
       table {
         width: 100%;
         border-collapse: collapse;
@@ -370,47 +401,46 @@
         position: sticky;
         top: 0;
         background: var(--surface);
-        border-bottom: 1px solid var(--border-active);
-        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-hi);
+        padding: 9px 14px;
         text-align: left;
         font-weight: 600;
         color: var(--text);
         white-space: nowrap;
-        letter-spacing: 0.04em;
         z-index: 10;
       }
-      thead th .th-remove {
+      .th-x {
         display: inline-block;
         margin-left: 8px;
         color: var(--muted);
         cursor: pointer;
         font-size: 10px;
-        transition: color 0.1s;
+        font-weight: normal;
       }
-      thead th .th-remove:hover {
-        color: var(--danger);
+      .th-x:hover {
+        color: var(--red);
       }
       tbody tr {
         border-bottom: 1px solid var(--border);
-        transition: background 0.08s;
       }
       tbody tr:hover {
         background: var(--surface2);
       }
       tbody td {
-        padding: 8px 14px;
-        color: var(--text);
-        max-width: 240px;
+        padding: 7px 14px;
+        max-width: 220px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      tbody td.empty {
-        color: var(--border-active);
+      tbody td.nil {
+        color: var(--border-hi);
       }
+
+      /* FOOTER */
       footer {
         border-top: 1px solid var(--border);
-        padding: 10px 24px;
+        padding: 0 24px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -422,13 +452,14 @@
         font-size: 10px;
         color: var(--muted);
       }
-      .footer-info span {
-        color: var(--accent2);
+      .footer-info b {
+        color: var(--blue);
+        font-weight: normal;
       }
       .export-btn {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         background: var(--text);
         color: #fff;
         border: none;
@@ -437,17 +468,19 @@
         font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        padding: 9px 22px;
+        padding: 8px 20px;
         border-radius: 3px;
         cursor: pointer;
-        transition: all 0.15s;
+        transition:
+          background 0.15s,
+          transform 0.1s;
       }
       .export-btn:hover {
         background: #333;
         transform: translateY(-1px);
       }
       .export-btn:active {
-        transform: translateY(0);
+        transform: none;
       }
       .export-btn:disabled {
         background: var(--border);
@@ -455,36 +488,36 @@
         cursor: not-allowed;
         transform: none;
       }
+
+      /* TOAST */
       .toast {
         position: fixed;
-        bottom: 60px;
+        bottom: 56px;
         right: 24px;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-left: 3px solid var(--accent2);
+        border-left: 3px solid var(--blue);
         border-radius: 4px;
-        padding: 12px 16px;
+        padding: 11px 16px;
         font-family: var(--mono);
         font-size: 11px;
         color: var(--text);
-        z-index: 100;
-        transform: translateX(120%);
-        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        max-width: 300px;
+        z-index: 999;
+        max-width: 320px;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        transform: translateX(140%);
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .toast.show {
         transform: translateX(0);
       }
-      .toast.error {
-        border-left-color: var(--danger);
+      .toast.err {
+        border-left-color: var(--red);
       }
+
       ::-webkit-scrollbar {
         width: 5px;
         height: 5px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
       }
       ::-webkit-scrollbar-thumb {
         background: var(--border);
@@ -494,16 +527,16 @@
   </head>
   <body>
     <header>
-      <div>
-        <div class="logo">XML<span> → </span>XLS<span> //</span> Extractor</div>
-        <div class="subtitle">
-          Generic field extractor · any depth · any schema
-        </div>
+      <div class="logo">XML<em> → </em>XLS<em> //</em> Extractor</div>
+      <div class="subtitle">
+        Generic field extractor · any depth · any schema
       </div>
     </header>
 
     <main>
+      <!-- LEFT PANEL -->
       <div class="left-panel">
+        <!-- Upload -->
         <div class="panel-section">
           <div class="section-label">01 / XML Datei</div>
           <div class="dropzone" id="dropzone">
@@ -512,58 +545,55 @@
               id="fileInput"
               accept=".xml,text/xml,application/xml"
             />
-            <div class="dropzone-icon">⬡</div>
-            <div class="dropzone-text">
+            <div class="dz-icon">⬡</div>
+            <div class="dz-text">
               <strong>XML hochladen</strong>Drag &amp; Drop oder klicken
             </div>
           </div>
-          <div class="file-info" id="fileInfo">
+          <div class="file-bar" id="fileBar">
             <div class="file-dot"></div>
             <span class="file-name" id="fileName"></span>
             <span class="file-size" id="fileSize"></span>
           </div>
-          <div class="parse-progress" id="parseProgress">
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill" id="progressFill"></div>
+          <div class="progress-wrap" id="progressWrap">
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
             </div>
-            <div class="progress-text" id="progressText">Analysiere…</div>
+            <div class="progress-label" id="progressLabel">Analysiere…</div>
           </div>
         </div>
-        <div class="panel-section">
+
+        <!-- Field selector -->
+        <div class="panel-section grow">
           <div class="section-label">02 / Felder auswählen</div>
           <div class="tree-controls">
-            <button class="tree-btn" id="btnAll" onclick="selectAll()">
-              Alle
-            </button>
-            <button class="tree-btn" id="btnNone" onclick="selectNone()">
+            <button class="tbtn" id="btnAll" onclick="selectAll()">Alle</button>
+            <button class="tbtn on" id="btnNone" onclick="selectNone()">
               Keine
             </button>
-            <button
-              class="tree-btn active"
-              id="btnFlat"
-              onclick="setView('flat')"
-            >
+            <button class="tbtn on" id="btnFlat" onclick="setView('flat')">
               Flat
             </button>
-            <button class="tree-btn" id="btnSorted" onclick="setView('sorted')">
+            <button class="tbtn" id="btnSort" onclick="setView('az')">
               A–Z
             </button>
           </div>
           <input
-            class="search-field"
-            id="searchField"
+            class="search-inp"
+            id="searchInp"
             type="text"
             placeholder="Felder filtern…"
-            oninput="filterFields(this.value)"
+            oninput="onSearch(this.value)"
           />
-          <div class="field-tree-wrap" id="fieldTree">
-            <div class="empty-state">
+          <div class="field-scroll" id="fieldList">
+            <div class="empty-msg">
               ← XML hochladen<br />um Felder zu erkunden
             </div>
           </div>
         </div>
       </div>
 
+      <!-- RIGHT PANEL -->
       <div class="right-panel">
         <div class="right-header">
           <div class="preview-title">Vorschau</div>
@@ -571,7 +601,7 @@
         </div>
         <div class="table-wrap" id="tableWrap">
           <div class="preview-empty">
-            <div class="big-icon">⬡</div>
+            <div class="icon">⬡</div>
             <div>Felder auswählen für Vorschau</div>
           </div>
         </div>
@@ -580,74 +610,65 @@
 
     <footer>
       <div class="footer-info" id="footerInfo">Kein Dokument geladen</div>
-      <button
-        class="export-btn"
-        id="exportBtn"
-        disabled
-        onclick="exportExcel()"
-      >
-        <span>↓</span> Excel exportieren
+      <button class="export-btn" id="exportBtn" disabled onclick="doExport()">
+        ↓ Excel exportieren
       </button>
     </footer>
 
     <div class="toast" id="toast"></div>
 
     <script>
-      // ─── STATE ───────────────────────────────────────────────────────────────────
-      var allFields = [];
-      var selectedFields = new Set();
-      var parsedRows = [];
-      var currentView = "flat";
-      var filterQuery = "";
-      var xmlFileName = "";
-      var totalNodes = 0;
+      // =============================================================================
+      // STATE
+      // =============================================================================
+      var S = {
+        fields: [], // [{path, leaf, isAttr, count}]
+        selected: new Set(), // selected field paths
+        rows: [], // [{path: value, ...}]
+        view: "flat", // 'flat' | 'az'
+        query: "",
+        fileName: "",
+        rowCount: 0,
+      };
 
-      // ─── INDEXEDDB ────────────────────────────────────────────────────────────────
-      var DB_NAME = "xml_extractor_v2";
-
-      function openDB() {
+      // =============================================================================
+      // INDEXEDDB  (persist across reloads)
+      // =============================================================================
+      function dbOpen() {
         return new Promise(function (resolve, reject) {
-          var req = indexedDB.open(DB_NAME, 1);
-          req.onupgradeneeded = function (e) {
-            e.target.result.createObjectStore("s");
+          var r = indexedDB.open("xmlex3", 1);
+          r.onupgradeneeded = function (e) {
+            e.target.result.createObjectStore("kv");
           };
-          req.onsuccess = function (e) {
+          r.onsuccess = function (e) {
             resolve(e.target.result);
           };
-          req.onerror = function () {
-            reject(req.error);
+          r.onerror = function () {
+            reject(r.error);
           };
         });
       }
-
-      function dbPut(key, value) {
-        return openDB()
+      function dbWrite(key, val) {
+        dbOpen()
           .then(function (db) {
-            return new Promise(function (resolve, reject) {
-              var tx = db.transaction("s", "readwrite");
-              tx.objectStore("s").put(value, key);
-              tx.oncomplete = resolve;
-              tx.onerror = function () {
-                reject(tx.error);
-              };
-            });
+            var tx = db.transaction("kv", "readwrite");
+            tx.objectStore("kv").put(val, key);
           })
           .catch(function (e) {
-            console.warn("dbPut:", e);
+            console.warn("db write", e);
           });
       }
-
-      function dbGet(key) {
-        return openDB()
+      function dbRead(key) {
+        return dbOpen()
           .then(function (db) {
             return new Promise(function (resolve, reject) {
-              var tx = db.transaction("s", "readonly");
-              var req = tx.objectStore("s").get(key);
-              req.onsuccess = function () {
-                resolve(req.result);
+              var tx = db.transaction("kv", "readonly");
+              var r = tx.objectStore("kv").get(key);
+              r.onsuccess = function () {
+                resolve(r.result);
               };
-              req.onerror = function () {
-                reject(req.error);
+              r.onerror = function () {
+                reject(r.error);
               };
             });
           })
@@ -655,82 +676,65 @@
             return null;
           });
       }
-
-      function saveSession() {
-        dbPut("session", {
-          allFields: allFields,
-          selectedFields: Array.from(selectedFields),
-          parsedRows: parsedRows,
-          xmlFileName: xmlFileName,
-          totalNodes: totalNodes,
-          currentView: currentView,
-          ts: Date.now(),
+      function saveState() {
+        dbWrite("state", {
+          fields: S.fields,
+          selected: Array.from(S.selected),
+          rows: S.rows,
+          view: S.view,
+          fileName: S.fileName,
+          rowCount: S.rowCount,
         });
       }
 
-      // ─── STARTUP: restore session ─────────────────────────────────────────────────
-      dbGet("session").then(function (s) {
-        if (!s || !s.parsedRows || s.parsedRows.length === 0) return;
-        allFields = s.allFields || [];
-        selectedFields = new Set(s.selectedFields || []);
-        parsedRows = s.parsedRows || [];
-        xmlFileName = s.xmlFileName || "";
-        totalNodes = s.totalNodes || 0;
-        currentView = s.currentView || "flat";
+      // =============================================================================
+      // STARTUP  —  restore saved state
+      // =============================================================================
+      dbRead("state").then(function (saved) {
+        if (!saved || !saved.rows || saved.rows.length === 0) return;
+        S.fields = saved.fields || [];
+        S.selected = new Set(saved.selected || []);
+        S.rows = saved.rows || [];
+        S.view = saved.view || "flat";
+        S.fileName = saved.fileName || "";
+        S.rowCount = saved.rowCount || 0;
 
-        document.getElementById("fileInfo").classList.add("visible");
-        document.getElementById("fileName").textContent = xmlFileName + ".xml";
-        document.getElementById("fileSize").textContent =
-          totalNodes + " Datensätze (gecacht)";
-        document.getElementById("footerInfo").innerHTML =
-          "<span>" +
-          totalNodes +
-          "</span> Datensätze · <span>" +
-          allFields.length +
-          "</span> Felder erkannt";
-        document
-          .getElementById("btnFlat")
-          .classList.toggle("active", currentView === "flat");
-        document
-          .getElementById("btnSorted")
-          .classList.toggle("active", currentView === "sorted");
-        document.getElementById("exportBtn").disabled =
-          selectedFields.size === 0;
-        updateSelectionButtons();
-        renderFieldTree();
+        byId("fileBar").classList.add("show");
+        byId("fileName").textContent = S.fileName + ".xml";
+        byId("fileSize").textContent = S.rowCount + " Datensätze (gecacht)";
+        setFooter();
+        syncButtons();
+        renderList();
         renderTable();
-        showToast("Letzter Stand wiederhergestellt");
+        toast("Letzter Stand wiederhergestellt");
       });
 
-      // ─── FILE HANDLING ────────────────────────────────────────────────────────────
-      var dropzone = document.getElementById("dropzone");
-      var fileInput = document.getElementById("fileInput");
-
-      dropzone.addEventListener("dragover", function (e) {
+      // =============================================================================
+      // FILE HANDLING
+      // =============================================================================
+      var dz = byId("dropzone");
+      byId("fileInput").addEventListener("change", function (e) {
+        if (e.target.files[0]) loadFile(e.target.files[0]);
+      });
+      dz.addEventListener("dragover", function (e) {
         e.preventDefault();
-        dropzone.classList.add("drag-over");
+        dz.classList.add("over");
       });
-      dropzone.addEventListener("dragleave", function () {
-        dropzone.classList.remove("drag-over");
+      dz.addEventListener("dragleave", function () {
+        dz.classList.remove("over");
       });
-      dropzone.addEventListener("drop", function (e) {
+      dz.addEventListener("drop", function (e) {
         e.preventDefault();
-        dropzone.classList.remove("drag-over");
-        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-      });
-      fileInput.addEventListener("change", function (e) {
-        if (e.target.files[0]) handleFile(e.target.files[0]);
+        dz.classList.remove("over");
+        if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
       });
 
-      function handleFile(file) {
-        xmlFileName = file.name.replace(/\.xml$/i, "");
-        document.getElementById("fileName").textContent = file.name;
-        document.getElementById("fileSize").textContent = formatBytes(
-          file.size,
-        );
-        document.getElementById("fileInfo").classList.add("visible");
-        document.getElementById("parseProgress").classList.add("visible");
-        setProgress(0, "Lese Datei…");
+      function loadFile(file) {
+        S.fileName = file.name.replace(/\.xml$/i, "");
+        byId("fileBar").classList.add("show");
+        byId("fileName").textContent = file.name;
+        byId("fileSize").textContent = fmtBytes(file.size);
+        showProgress(0, "Lese Datei…");
         var reader = new FileReader();
         reader.onload = function (e) {
           parseXML(e.target.result);
@@ -738,230 +742,87 @@
         reader.readAsText(file);
       }
 
-      function formatBytes(b) {
-        if (b < 1024) return b + " B";
-        if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
-        return (b / 1048576).toFixed(1) + " MB";
+      function fmtBytes(n) {
+        if (n < 1024) return n + " B";
+        if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+        return (n / 1048576).toFixed(1) + " MB";
       }
 
-      // ─── XML PARSER ──────────────────────────────────────────────────────────────
+      // =============================================================================
+      // XML PARSER
+      // =============================================================================
+      function parseXML(text) {
+        showProgress(10, "Parse XML…");
 
-      function detectKVPattern(elements) {
-        if (!elements || elements.length < 2) return null;
-        var first = elements[0];
-        if (first.children.length < 2) return null;
-        var keyTag = first.children[0].localName;
-        var valueTag = first.children[1].localName;
-        var keys = [];
-        for (var i = 0; i < elements.length; i++) {
-          var k = elements[i].getElementsByTagNameNS("*", keyTag)[0];
-          if (k) keys.push(k.textContent.trim());
-        }
-        var unique = new Set(keys.filter(Boolean));
-        return unique.size > 1 ? { keyTag: keyTag, valueTag: valueTag } : null;
-      }
-
-      function findKVContainers(node, kvPatterns) {
-        if (node.nodeType !== 1) return;
-        var byTag = {};
-        for (var i = 0; i < node.children.length; i++) {
-          var t = node.children[i].localName;
-          if (!byTag[t]) byTag[t] = [];
-          byTag[t].push(node.children[i]);
-        }
-        var tags = Object.keys(byTag);
-        for (var ti = 0; ti < tags.length; ti++) {
-          var tag = tags[ti];
-          var siblings = byTag[tag];
-          if (siblings.length >= 2) {
-            var kv = detectKVPattern(siblings);
-            if (kv) kvPatterns[tag] = kv;
-          }
-          findKVContainers(siblings[0], kvPatterns);
-        }
-      }
-
-      function buildExtractRow(kvPatterns) {
-        return function extractRow(rowEl) {
-          var row = {};
-          function walk(node, path) {
-            if (node.nodeType !== 1) return;
-            var tag = node.localName.toUpperCase();
-            var currPath = path ? path + "/" + tag : tag;
-
-            for (var ai = 0; ai < node.attributes.length; ai++) {
-              var attr = node.attributes[ai];
-              if (attr.name.indexOf(":") === -1) {
-                row[currPath + "/@" + attr.name.toUpperCase()] = attr.value;
-              }
-            }
-
-            if (node.children.length === 0) {
-              row[currPath] = node.textContent.trim();
-              return;
-            }
-
-            var byTag = {};
-            for (var ci = 0; ci < node.children.length; ci++) {
-              var ct = node.children[ci].localName;
-              if (!byTag[ct]) byTag[ct] = [];
-              byTag[ct].push(node.children[ci]);
-            }
-
-            var childTags = Object.keys(byTag);
-            for (var cti = 0; cti < childTags.length; cti++) {
-              var childTag = childTags[cti];
-              var siblings = byTag[childTag];
-
-              if (siblings.length >= 2 && kvPatterns[childTag]) {
-                var kv = kvPatterns[childTag];
-                for (var si = 0; si < siblings.length; si++) {
-                  var sib = siblings[si];
-                  var keyEl = sib.getElementsByTagNameNS("*", kv.keyTag)[0];
-                  var valEl = sib.getElementsByTagNameNS("*", kv.valueTag)[0];
-                  if (keyEl) {
-                    var keyName = keyEl.textContent
-                      .trim()
-                      .replace(/[\/\\?\*\[\]:]/g, "_");
-                    var colPath =
-                      currPath +
-                      "/" +
-                      childTag.toUpperCase() +
-                      "[" +
-                      keyName +
-                      "]";
-                    row[colPath] = valEl ? valEl.textContent.trim() : "";
-                    for (var sci = 0; sci < sib.children.length; sci++) {
-                      var subChild = sib.children[sci];
-                      var subTag = subChild.localName.toUpperCase();
-                      if (
-                        subTag !== kv.keyTag.toUpperCase() &&
-                        subTag !== kv.valueTag.toUpperCase()
-                      ) {
-                        walk(
-                          subChild,
-                          currPath +
-                            "/" +
-                            childTag.toUpperCase() +
-                            "[" +
-                            keyName +
-                            "]",
-                        );
-                      }
-                    }
-                  }
-                }
-              } else if (siblings.length >= 2) {
-                for (var ri = 0; ri < siblings.length; ri++) {
-                  walk(
-                    siblings[ri],
-                    currPath +
-                      "/" +
-                      childTag.toUpperCase() +
-                      "[" +
-                      (ri + 1) +
-                      "]",
-                  );
-                }
-              } else {
-                walk(siblings[0], currPath);
-              }
-            }
-          }
-          walk(rowEl, "");
-          return row;
-        };
-      }
-
-      function parseXML(xmlText) {
-        setProgress(10, "Parse XML…");
-        // Pre-sanitize unescaped & (not part of &amp; &lt; &gt; &quot; &apos; or &#...;)
-        // This fixes broken XML from exporters that embed raw & in text content
-        xmlText = xmlText.replace(
-          /&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[\da-fA-F]+);)/g,
+        // Fix unescaped & that are not part of a valid XML entity
+        text = text.replace(
+          /&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)/g,
           "&amp;",
         );
 
-        var xmlDoc;
+        var doc;
         try {
-          var parser = new DOMParser();
-          xmlDoc = parser.parseFromString(xmlText, "text/xml");
-          var errEl = xmlDoc.querySelector("parsererror");
-          if (errEl)
-            throw new Error("XML-Fehler: " + errEl.textContent.slice(0, 100));
+          doc = new DOMParser().parseFromString(text, "text/xml");
+          var perr = doc.querySelector("parsererror");
+          if (perr) throw new Error(perr.textContent.trim().slice(0, 120));
         } catch (ex) {
-          showToast(ex.message, true);
-          document.getElementById("parseProgress").classList.remove("visible");
+          hideProgress();
+          toast("XML-Fehler: " + ex.message, true);
           return;
         }
 
-        setProgress(25, "Erkunde Struktur…");
+        showProgress(25, "Erkunde Struktur…");
 
-        // Pass 1: row-anchor = most repeated element
+        // --- find row anchor (most repeated element at any depth) ---
+        var depthCount = {};
+        scanDepths(doc.documentElement, 0, depthCount);
 
-        var tagDepthCount = {};
-        function scanDepths(node, depth) {
-          if (node.nodeType !== 1) return;
-          var k = node.localName + "@" + depth;
-          tagDepthCount[k] = (tagDepthCount[k] || 0) + 1;
-          for (var i = 0; i < node.children.length; i++)
-            scanDepths(node.children[i], depth + 1);
-        }
-        scanDepths(xmlDoc.documentElement, 0);
-
-        var bestKey = null,
-          bestCount = 0;
-        var depthKeys = Object.keys(tagDepthCount);
-        for (var dki = 0; dki < depthKeys.length; dki++) {
-          if (tagDepthCount[depthKeys[dki]] > bestCount) {
-            bestCount = tagDepthCount[depthKeys[dki]];
-            bestKey = depthKeys[dki];
+        var bestKey = "",
+          bestN = 0;
+        Object.keys(depthCount).forEach(function (k) {
+          if (depthCount[k] > bestN) {
+            bestN = depthCount[k];
+            bestKey = k;
           }
-        }
+        });
         var rowTag = bestKey
           ? bestKey.split("@")[0]
-          : xmlDoc.documentElement.localName;
-        var rowElements = Array.from(
-          xmlDoc.getElementsByTagNameNS("*", rowTag),
-        );
-        setProgress(40, rowElements.length + " Datensätze gefunden…");
+          : doc.documentElement.localName;
+        var rowEls = Array.from(doc.getElementsByTagNameNS("*", rowTag));
 
-        // Pass 2: KV pattern detection
-        var kvPatterns = {};
-        if (rowElements.length > 0)
-          findKVContainers(rowElements[0], kvPatterns);
+        showProgress(40, rowEls.length + " Datensätze…");
 
-        setProgress(55, "Extrahiere Felder…");
+        // --- detect key/value patterns (e.g. TYPE+VALUE pairs) ---
+        var kvMap = {};
+        if (rowEls.length > 0) detectKV(rowEls[0], kvMap);
 
-        // Pass 3: extract rows
-        var extractRow = buildExtractRow(kvPatterns);
-        var rowData = [];
-        for (var ri = 0; ri < rowElements.length; ri++) {
-          rowData.push(extractRow(rowElements[ri]));
+        showProgress(55, "Extrahiere Felder…");
+
+        // --- extract rows ---
+        var rows = [];
+        for (var i = 0; i < rowEls.length; i++) {
+          rows.push(extractRow(rowEls[i], kvMap));
         }
 
-        setProgress(80, "Baue Feldliste…");
+        showProgress(80, "Baue Feldliste…");
 
-        // Build field registry in document order
-        var fieldCountMap = {};
-        var fieldOrderMap = {};
-        var orderIdx = 0;
-        for (var rowi = 0; rowi < rowData.length; rowi++) {
-          var rowKeys = Object.keys(rowData[rowi]);
-          for (var rki = 0; rki < rowKeys.length; rki++) {
-            var rk = rowKeys[rki];
-            if (fieldOrderMap[rk] === undefined) fieldOrderMap[rk] = orderIdx++;
-            if (rowData[rowi][rk] !== "") {
-              fieldCountMap[rk] = (fieldCountMap[rk] || 0) + 1;
-            } else if (fieldCountMap[rk] === undefined) {
-              fieldCountMap[rk] = 0;
-            }
+        // --- build ordered field list ---
+        var countMap = {},
+          orderMap = {},
+          idx = 0;
+        for (var ri = 0; ri < rows.length; ri++) {
+          var keys = Object.keys(rows[ri]);
+          for (var ki = 0; ki < keys.length; ki++) {
+            var k = keys[ki];
+            if (orderMap[k] === undefined) orderMap[k] = idx++;
+            if (rows[ri][k] !== "") countMap[k] = (countMap[k] || 0) + 1;
+            else if (countMap[k] === undefined) countMap[k] = 0;
           }
         }
 
-        allFields = Object.keys(fieldCountMap)
+        var fields = Object.keys(countMap)
           .sort(function (a, b) {
-            return (fieldOrderMap[a] || 0) - (fieldOrderMap[b] || 0);
+            return (orderMap[a] || 0) - (orderMap[b] || 0);
           })
           .map(function (path) {
             var parts = path.split("/");
@@ -969,301 +830,422 @@
             var isAttr = leaf.charAt(0) === "@";
             return {
               path: path,
-              leafName: isAttr ? leaf.slice(1) : leaf,
+              leaf: isAttr ? leaf.slice(1) : leaf,
               isAttr: isAttr,
-              count: fieldCountMap[path],
+              count: countMap[path],
             };
           });
 
-        parsedRows = rowData;
-        totalNodes = rowData.length;
+        // --- update state ---
+        S.fields = fields;
+        S.selected = new Set();
+        S.rows = rows;
+        S.rowCount = rows.length;
 
-        setProgress(100, "Fertig!");
-        setTimeout(function () {
-          document.getElementById("parseProgress").classList.remove("visible");
-        }, 600);
+        showProgress(100, "Fertig!");
+        setTimeout(hideProgress, 700);
 
-        document.getElementById("footerInfo").innerHTML =
-          "<span>" +
-          totalNodes +
-          "</span> Datensätze · <span>" +
-          allFields.length +
-          "</span> Felder erkannt";
-
-        selectedFields.clear();
-        document.getElementById("exportBtn").disabled = true;
-        updateSelectionButtons();
-        renderFieldTree();
+        setFooter();
+        syncButtons();
+        renderList();
         renderTable();
-        showToast(totalNodes + " Datensätze, " + allFields.length + " Felder");
-        saveSession();
+        byId("exportBtn").disabled = true;
+        toast(
+          S.rowCount + " Datensätze, " + S.fields.length + " Felder erkannt",
+        );
+        saveState();
       }
 
-      // ─── FIELD TREE ──────────────────────────────────────────────────────────────
-      function renderFieldTree() {
-        var container = document.getElementById("fieldTree");
-        if (allFields.length === 0) {
-          container.innerHTML =
-            '<div class="empty-state">← XML hochladen<br>um Felder zu erkunden</div>';
+      // depth-count helper
+      function scanDepths(node, depth, map) {
+        if (node.nodeType !== 1) return;
+        var k = node.localName + "@" + depth;
+        map[k] = (map[k] || 0) + 1;
+        for (var i = 0; i < node.children.length; i++) {
+          scanDepths(node.children[i], depth + 1, map);
+        }
+      }
+
+      // detect KV pattern: sibling elements that have 2+ children
+      // where the first child is a discriminating key (different values across siblings)
+      function detectKV(node, kvMap) {
+        if (node.nodeType !== 1) return;
+        var grouped = groupChildren(node);
+        var tags = Object.keys(grouped);
+        for (var ti = 0; ti < tags.length; ti++) {
+          var tag = tags[ti];
+          var sibs = grouped[tag];
+          if (sibs.length >= 2 && sibs[0].children.length >= 2) {
+            var keyTag = sibs[0].children[0].localName;
+            var valTag = sibs[0].children[1].localName;
+            var uniq = new Set();
+            for (var si = 0; si < sibs.length; si++) {
+              var kEl = sibs[si].getElementsByTagNameNS("*", keyTag)[0];
+              if (kEl) uniq.add(kEl.textContent.trim());
+            }
+            if (uniq.size > 1) kvMap[tag] = { keyTag: keyTag, valTag: valTag };
+          }
+          detectKV(sibs[0], kvMap);
+        }
+      }
+
+      function groupChildren(node) {
+        var g = {};
+        for (var i = 0; i < node.children.length; i++) {
+          var t = node.children[i].localName;
+          if (!g[t]) g[t] = [];
+          g[t].push(node.children[i]);
+        }
+        return g;
+      }
+
+      function extractRow(rowEl, kvMap) {
+        var row = {};
+        walkNode(rowEl, "", row, kvMap);
+        return row;
+      }
+
+      function walkNode(node, path, row, kvMap) {
+        if (node.nodeType !== 1) return;
+        var tag = node.localName.toUpperCase();
+        var curPath = path ? path + "/" + tag : tag;
+
+        // XML attributes (skip namespace declarations)
+        for (var ai = 0; ai < node.attributes.length; ai++) {
+          var a = node.attributes[ai];
+          if (a.name.indexOf(":") === -1) {
+            row[curPath + "/@" + a.name.toUpperCase()] = a.value;
+          }
+        }
+
+        // Leaf node
+        if (node.children.length === 0) {
+          row[curPath] = node.textContent.trim();
           return;
         }
 
-        var fields = allFields.slice();
+        var grouped = groupChildren(node);
+        var childTags = Object.keys(grouped);
 
-        if (filterQuery) {
-          var q = filterQuery.toLowerCase();
-          fields = fields.filter(function (f) {
-            return (
-              f.path.toLowerCase().indexOf(q) !== -1 ||
-              f.leafName.toLowerCase().indexOf(q) !== -1
-            );
-          });
+        for (var cti = 0; cti < childTags.length; cti++) {
+          var childTag = childTags[cti];
+          var sibs = grouped[childTag];
+          var childTagUC = childTag.toUpperCase();
+
+          if (sibs.length >= 2 && kvMap[childTag]) {
+            // KV pivot: each sibling becomes a named column
+            var kv = kvMap[childTag];
+            for (var si = 0; si < sibs.length; si++) {
+              var sib = sibs[si];
+              var kEl = sib.getElementsByTagNameNS("*", kv.keyTag)[0];
+              var vEl = sib.getElementsByTagNameNS("*", kv.valTag)[0];
+              if (!kEl) continue;
+              var keyName = kEl.textContent
+                .trim()
+                .replace(/[\/\\?*\[\]:]/g, "_");
+              var colPath = curPath + "/" + childTagUC + "[" + keyName + "]";
+              row[colPath] = vEl ? vEl.textContent.trim() : "";
+              // walk any extra children in this sibling
+              for (var sci = 0; sci < sib.children.length; sci++) {
+                var sc = sib.children[sci];
+                if (
+                  sc.localName.toUpperCase() !== kv.keyTag.toUpperCase() &&
+                  sc.localName.toUpperCase() !== kv.valTag.toUpperCase()
+                ) {
+                  walkNode(
+                    sc,
+                    curPath + "/" + childTagUC + "[" + keyName + "]",
+                    row,
+                    kvMap,
+                  );
+                }
+              }
+            }
+          } else if (sibs.length >= 2) {
+            // Indexed repeating elements
+            for (var ri = 0; ri < sibs.length; ri++) {
+              walkNode(
+                sibs[ri],
+                curPath + "/" + childTagUC + "[" + (ri + 1) + "]",
+                row,
+                kvMap,
+              );
+            }
+          } else {
+            walkNode(sibs[0], curPath, row, kvMap);
+          }
+        }
+      }
+
+      // =============================================================================
+      // FIELD LIST
+      // =============================================================================
+      function renderList() {
+        var container = byId("fieldList");
+        if (S.fields.length === 0) {
+          container.innerHTML =
+            '<div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>';
+          return;
         }
 
-        if (currentView === "sorted") {
-          fields.sort(function (a, b) {
+        var list = S.fields.slice();
+
+        if (S.query) {
+          var q = S.query.toLowerCase();
+          list = list.filter(function (f) {
+            return f.path.toLowerCase().indexOf(q) !== -1;
+          });
+        }
+        if (S.view === "az") {
+          list.sort(function (a, b) {
             return a.path.localeCompare(b.path);
           });
         }
 
-        var html = "";
-        for (var fi = 0; fi < fields.length; fi++) {
-          var f = fields[fi];
-          var sel = selectedFields.has(f.path);
-          var kvMatch = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
-          var prefixDisplay, leafDisplay;
-          if (kvMatch) {
-            prefixDisplay = kvMatch[1].replace(/\/$/, "");
-            leafDisplay = kvMatch[2];
-          } else {
-            var parts = f.path.split("/");
-            prefixDisplay = parts.slice(0, -1).join("/");
-            leafDisplay = parts[parts.length - 1];
-          }
-          var leafClass = f.isAttr ? "leaf attr" : "leaf";
-          var pathDisplay = prefixDisplay
-            ? '<span style="color:var(--muted)">' +
-              esc(prefixDisplay) +
-              '/</span><span class="' +
-              leafClass +
-              '">' +
-              esc(leafDisplay) +
-              "</span>"
-            : '<span class="' + leafClass + '">' + esc(leafDisplay) + "</span>";
-
-          var safeOnclick =
-            "toggleField('" +
-            f.path.replace(/\\/g, "\\\\").replace(/'/g, "\\'") +
-            "')";
-          html +=
-            '<div class="field-item' +
-            (sel ? " selected" : "") +
-            '" onclick="' +
-            esc(safeOnclick) +
-            '">' +
-            '<div class="field-checkbox"></div>' +
-            '<div class="field-path" title="' +
-            esc(f.path) +
-            '">' +
-            pathDisplay +
-            "</div>" +
-            '<div class="field-count">' +
-            f.count +
-            "</div>" +
-            "</div>";
+        if (list.length === 0) {
+          container.innerHTML = '<div class="empty-msg">Keine Treffer</div>';
+          return;
         }
 
-        container.innerHTML =
-          html || '<div class="empty-state">Keine Treffer</div>';
+        var html = "";
+        for (var i = 0; i < list.length; i++) {
+          var f = list[i];
+          var sel = S.selected.has(f.path);
+
+          // Build path display: grey prefix, colored leaf
+          var kvM = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
+          var pre, lf;
+          if (kvM) {
+            pre = kvM[1].replace(/\/$/, "");
+            lf = kvM[2];
+          } else {
+            var parts = f.path.split("/");
+            pre = parts.slice(0, -1).join("/");
+            lf = parts[parts.length - 1];
+          }
+          var leafCls = f.isAttr ? "fleaf attr" : "fleaf";
+          var display = pre
+            ? '<span style="color:var(--muted)">' +
+              he(pre) +
+              '/</span><span class="' +
+              leafCls +
+              '">' +
+              he(lf) +
+              "</span>"
+            : '<span class="' + leafCls + '">' + he(lf) + "</span>";
+
+          // Safe onclick: encode path into data attribute, use onclick index
+          html +=
+            '<div class="fitem' +
+            (sel ? " sel" : "") +
+            '" data-path="' +
+            he(f.path) +
+            '" onclick="toggleIdx(this)">';
+          html += '<div class="fcheck"></div>';
+          html +=
+            '<div class="fpath" title="' +
+            he(f.path) +
+            '">' +
+            display +
+            "</div>";
+          html += '<div class="fcount">' + f.count + "</div>";
+          html += "</div>";
+        }
+        container.innerHTML = html;
       }
 
-      function toggleField(path) {
-        if (selectedFields.has(path)) selectedFields.delete(path);
-        else selectedFields.add(path);
-        updateSelectionButtons();
-        renderFieldTree();
+      function toggleIdx(el) {
+        var path = el.getAttribute("data-path");
+        if (!path) return;
+        if (S.selected.has(path)) S.selected.delete(path);
+        else S.selected.add(path);
+        syncButtons();
+        renderList();
         renderTable();
-        document.getElementById("exportBtn").disabled =
-          selectedFields.size === 0;
-        saveSession();
-      }
-
-      function updateSelectionButtons() {
-        var hasAny = selectedFields.size > 0;
-        var hasAll =
-          allFields.length > 0 && selectedFields.size === allFields.length;
-        document.getElementById("btnAll").classList.toggle("active", hasAll);
-        document.getElementById("btnNone").classList.toggle("active", !hasAny);
+        byId("exportBtn").disabled = S.selected.size === 0;
+        saveState();
       }
 
       function selectAll() {
-        for (var i = 0; i < allFields.length; i++)
-          selectedFields.add(allFields[i].path);
-        updateSelectionButtons();
-        renderFieldTree();
+        for (var i = 0; i < S.fields.length; i++)
+          S.selected.add(S.fields[i].path);
+        syncButtons();
+        renderList();
         renderTable();
-        document.getElementById("exportBtn").disabled =
-          selectedFields.size === 0;
-        saveSession();
+        byId("exportBtn").disabled = S.selected.size === 0;
+        saveState();
       }
 
       function selectNone() {
-        selectedFields.clear();
-        updateSelectionButtons();
-        renderFieldTree();
+        S.selected.clear();
+        syncButtons();
+        renderList();
         renderTable();
-        document.getElementById("exportBtn").disabled = true;
-        saveSession();
+        byId("exportBtn").disabled = true;
+        saveState();
       }
 
       function setView(v) {
-        currentView = v;
-        document
-          .getElementById("btnFlat")
-          .classList.toggle("active", v === "flat");
-        document
-          .getElementById("btnSorted")
-          .classList.toggle("active", v === "sorted");
-        renderFieldTree();
-        saveSession();
+        S.view = v;
+        syncButtons();
+        renderList();
+        saveState();
       }
 
-      function filterFields(q) {
-        filterQuery = q;
-        renderFieldTree();
+      function onSearch(q) {
+        S.query = q;
+        renderList();
       }
 
-      // ─── PREVIEW TABLE ───────────────────────────────────────────────────────────
-      var PREVIEW_LIMIT = 200;
+      function syncButtons() {
+        var all = S.fields.length > 0 && S.selected.size === S.fields.length;
+        var none = S.selected.size === 0;
+        setBtnOn("btnAll", all);
+        setBtnOn("btnNone", none);
+        setBtnOn("btnFlat", S.view === "flat");
+        setBtnOn("btnSort", S.view === "az");
+      }
+
+      function setBtnOn(id, on) {
+        var el = byId(id);
+        if (on) el.classList.add("on");
+        else el.classList.remove("on");
+      }
+
+      // =============================================================================
+      // PREVIEW TABLE
+      // =============================================================================
+      var PREVIEW = 200;
 
       function renderTable() {
-        var container = document.getElementById("tableWrap");
-        var stats = document.getElementById("previewStats");
+        var wrap = byId("tableWrap");
+        var stats = byId("previewStats");
 
-        if (selectedFields.size === 0) {
-          container.innerHTML =
-            '<div class="preview-empty"><div class="big-icon">⬡</div><div>Felder auswählen für Vorschau</div></div>';
+        if (S.selected.size === 0) {
+          wrap.innerHTML =
+            '<div class="preview-empty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>';
           stats.textContent = "—";
           return;
         }
 
-        var cols = Array.from(selectedFields);
-        var rows = parsedRows.slice(0, PREVIEW_LIMIT);
-        var colLabels = cols.map(function (c) {
-          return pathToLabel(c);
-        });
+        var cols = Array.from(S.selected);
+        var labels = cols.map(pathLabel);
+        var rows = S.rows.slice(0, PREVIEW);
 
-        var headerCells = "";
+        var th = "";
         for (var ci = 0; ci < cols.length; ci++) {
-          var safeOnclick =
-            "toggleField('" +
-            cols[ci].replace(/\\/g, "\\\\").replace(/'/g, "\\'") +
-            "')";
-          headerCells +=
+          th +=
             "<th>" +
-            esc(colLabels[ci]) +
-            '<span class="th-remove" onclick="' +
-            esc(safeOnclick) +
-            '" title="Spalte entfernen">✕</span></th>';
+            he(labels[ci]) +
+            '<span class="th-x" data-path="' +
+            he(cols[ci]) +
+            '" onclick="removeCol(this)" title="Entfernen">✕</span></th>';
         }
 
-        var bodyRows = "";
+        var tb = "";
         for (var ri = 0; ri < rows.length; ri++) {
-          var cells = "";
-          for (var rci = 0; rci < cols.length; rci++) {
-            var val = rows[ri][cols[rci]];
-            cells +=
-              val !== undefined && val !== ""
-                ? '<td title="' + esc(val) + '">' + esc(val) + "</td>"
-                : '<td class="empty">—</td>';
+          tb += "<tr>";
+          for (var ci2 = 0; ci2 < cols.length; ci2++) {
+            var v = rows[ri][cols[ci2]];
+            if (v !== undefined && v !== "") {
+              tb += '<td title="' + he(v) + '">' + he(v) + "</td>";
+            } else {
+              tb += '<td class="nil">—</td>';
+            }
           }
-          bodyRows += "<tr>" + cells + "</tr>";
+          tb += "</tr>";
         }
 
-        container.innerHTML =
+        wrap.innerHTML =
           "<table><thead><tr>" +
-          headerCells +
+          th +
           "</tr></thead><tbody>" +
-          bodyRows +
+          tb +
           "</tbody></table>";
 
-        var total = parsedRows.length;
+        var total = S.rows.length;
         stats.innerHTML =
-          "<span>" +
+          "<b>" +
           total +
-          "</span> Zeilen · <span>" +
+          "</b> Zeilen · <b>" +
           cols.length +
-          "</span> Spalten" +
-          (total > PREVIEW_LIMIT ? " · Vorschau: " + PREVIEW_LIMIT : "");
+          "</b> Spalten" +
+          (total > PREVIEW ? " · Vorschau: " + PREVIEW : "");
       }
 
-      // ─── EXCEL EXPORT ────────────────────────────────────────────────────────────
-      function exportExcel() {
-        if (selectedFields.size === 0 || parsedRows.length === 0) return;
+      function removeCol(el) {
+        var path = el.getAttribute("data-path");
+        S.selected.delete(path);
+        syncButtons();
+        renderList();
+        renderTable();
+        byId("exportBtn").disabled = S.selected.size === 0;
+        saveState();
+      }
 
-        var cols = Array.from(selectedFields);
-        var colLabels = cols.map(function (c) {
-          return pathToLabel(c);
-        });
-        var sheetData = [colLabels];
+      // =============================================================================
+      // EXPORT
+      // =============================================================================
+      function doExport() {
+        if (S.selected.size === 0 || S.rows.length === 0) return;
 
-        for (var i = 0; i < parsedRows.length; i++) {
-          var dataRow = [];
+        var cols = Array.from(S.selected);
+        var labels = cols.map(pathLabel);
+        var data = [labels];
+
+        for (var ri = 0; ri < S.rows.length; ri++) {
+          var row = [];
           for (var ci = 0; ci < cols.length; ci++) {
-            var v = parsedRows[i][cols[ci]];
-            dataRow.push(v !== undefined ? v : "");
+            var v = S.rows[ri][cols[ci]];
+            row.push(v !== undefined ? v : "");
           }
-          sheetData.push(dataRow);
+          data.push(row);
         }
 
-        var ws = XLSX.utils.aoa_to_sheet(sheetData);
+        var ws = XLSX.utils.aoa_to_sheet(data);
+
+        // header styling
         var range = XLSX.utils.decode_range(ws["!ref"]);
         for (var c = range.s.c; c <= range.e.c; c++) {
           var cell = ws[XLSX.utils.encode_cell({ r: 0, c: c })];
-          if (cell) {
+          if (cell)
             cell.s = {
               font: { bold: true, name: "Arial", sz: 10 },
               fill: { fgColor: { rgb: "DBEAFE" }, patternType: "solid" },
               alignment: { horizontal: "left" },
             };
-          }
         }
 
-        var colWidths = colLabels.map(function (label, ci) {
-          var max = label.length;
-          for (var ri = 0; ri < parsedRows.length; ri++) {
-            var v = parsedRows[ri][cols[ci]];
+        // column widths
+        ws["!cols"] = labels.map(function (lbl, ci) {
+          var max = lbl.length;
+          for (var ri = 0; ri < S.rows.length; ri++) {
+            var v = S.rows[ri][cols[ci]];
             if (v && v.length > max) max = v.length;
           }
-          return { wch: Math.min(max + 2, 45) };
+          return { wch: Math.min(max + 2, 50) };
         });
-        ws["!cols"] = colWidths;
 
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Extraktion");
-        var fname =
-          (xmlFileName || "export") +
-          "_" +
-          new Date().toISOString().slice(0, 10) +
-          ".xlsx";
-        XLSX.writeFile(wb, fname);
-        showToast(parsedRows.length + " Zeilen exportiert");
+        XLSX.writeFile(
+          wb,
+          (S.fileName || "export") +
+            "_" +
+            new Date().toISOString().slice(0, 10) +
+            ".xlsx",
+        );
+        toast(S.rows.length + " Zeilen exportiert");
       }
 
-      // ─── UTILS ───────────────────────────────────────────────────────────────────
-      function setProgress(pct, text) {
-        document.getElementById("progressFill").style.width = pct + "%";
-        document.getElementById("progressText").textContent = text;
+      // =============================================================================
+      // UTILS
+      // =============================================================================
+      function byId(id) {
+        return document.getElementById(id);
       }
 
-      function pathToLabel(path) {
-        var kvMatch = path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/);
-        if (kvMatch)
-          return kvMatch[2] ? kvMatch[1] + " / " + kvMatch[2] : kvMatch[1];
-        return path.split("/").pop().replace("@", "");
-      }
-
-      function esc(s) {
+      function he(s) {
         return String(s)
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
@@ -1272,15 +1254,39 @@
           .replace(/'/g, "&#39;");
       }
 
-      var toastTimer;
-      function showToast(msg, isError) {
-        var t = document.getElementById("toast");
-        t.textContent = msg;
-        t.className = "toast show" + (isError ? " error" : "");
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(function () {
-          t.classList.remove("show");
-        }, 2800);
+      function pathLabel(path) {
+        var m = path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/);
+        if (m) return m[2] ? m[1] + " / " + m[2] : m[1];
+        return path.split("/").pop().replace("@", "");
+      }
+
+      function showProgress(pct, label) {
+        byId("progressWrap").classList.add("show");
+        byId("progressFill").style.width = pct + "%";
+        byId("progressLabel").textContent = label;
+      }
+      function hideProgress() {
+        byId("progressWrap").classList.remove("show");
+      }
+
+      function setFooter() {
+        byId("footerInfo").innerHTML =
+          "<b>" +
+          S.rowCount +
+          "</b> Datensätze · <b>" +
+          S.fields.length +
+          "</b> Felder erkannt";
+      }
+
+      var _toastTimer;
+      function toast(msg, isErr) {
+        var el = byId("toast");
+        el.textContent = msg;
+        el.className = "toast show" + (isErr ? " err" : "");
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(function () {
+          el.classList.remove("show");
+        }, 3000);
       }
     </script>
   </body>
