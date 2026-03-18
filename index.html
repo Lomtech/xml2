@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XML → Excel Extractor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap");
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f5f5f3;
+        --surface: #ffffff;
+        --surface2: #f0f0ee;
+        --border: #ddddd9;
+        --border-active: #c0c0bc;
+        --accent: #1a1a1a;
+        --accent2: #2563eb;
+        --text: #1a1a1a;
+        --muted: #8a8a85;
+        --danger: #dc2626;
+        --mono: "IBM Plex Mono", monospace;
+        --sans: "IBM Plex Sans", sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 14px;
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      /* HEADER */
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 18px 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--surface);
+      }
+      .logo {
+        font-family: var(--mono);
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--accent);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .logo span {
+        color: var(--muted);
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 12px;
+        font-family: var(--mono);
+      }
+
+      /* MAIN LAYOUT */
+      main {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        height: calc(100vh - 57px - 40px);
+        overflow: hidden;
+      }
+
+      /* LEFT PANEL */
+      .left-panel {
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .panel-section {
+        border-bottom: 1px solid var(--border);
+        padding: 20px;
+      }
+      .panel-section:last-child {
+        border-bottom: none;
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .section-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+
+      /* DROPZONE */
+      .dropzone {
+        border: 1px dashed var(--border-active);
+        background: var(--surface2);
+        border-radius: 4px;
+        padding: 28px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+      }
+      .dropzone:hover,
+      .dropzone.drag-over {
+        border-color: var(--accent);
+        background: rgba(232, 255, 0, 0.03);
+      }
+      .dropzone input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+      }
+      .dropzone-icon {
+        font-size: 28px;
+        margin-bottom: 8px;
+      }
+      .dropzone-text {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      .dropzone-text strong {
+        color: var(--text);
+        display: block;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+
+      .file-info {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 12px 14px;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .file-info.visible {
+        display: flex;
+      }
+      .file-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent2);
+        flex-shrink: 0;
+      }
+      .file-name {
+        color: var(--accent2);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+      .file-size {
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+
+      /* PROGRESS */
+      .parse-progress {
+        display: none;
+        margin-top: 10px;
+      }
+      .parse-progress.visible {
+        display: block;
+      }
+      .progress-bar-track {
+        height: 2px;
+        background: var(--border);
+        border-radius: 1px;
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        height: 100%;
+        background: var(--accent);
+        width: 0%;
+        transition: width 0.2s;
+        border-radius: 1px;
+      }
+      .progress-text {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      /* FIELD TREE */
+      .field-tree-wrap {
+        flex: 1;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+
+      .empty-state {
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+        padding: 32px 16px;
+        line-height: 1.8;
+        font-family: var(--mono);
+      }
+
+      .tree-controls {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 10px;
+        flex-shrink: 0;
+      }
+      .tree-btn {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.1s;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .tree-btn:hover {
+        color: var(--text);
+        border-color: var(--border-active);
+      }
+      .tree-btn.active {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: rgba(232, 255, 0, 0.05);
+      }
+
+      .search-field {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 7px 10px;
+        border-radius: 3px;
+        outline: none;
+        margin-bottom: 10px;
+        transition: border-color 0.15s;
+      }
+      .search-field:focus {
+        border-color: var(--accent);
+      }
+      .search-field::placeholder {
+        color: var(--muted);
+      }
+
+      /* FIELD ITEMS */
+      .field-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: background 0.1s;
+        user-select: none;
+        position: relative;
+      }
+      .field-item:hover {
+        background: var(--surface2);
+      }
+      .field-item.selected {
+        background: rgba(232, 255, 0, 0.06);
+      }
+
+      .field-checkbox {
+        width: 14px;
+        height: 14px;
+        border: 1px solid var(--border-active);
+        border-radius: 2px;
+        flex-shrink: 0;
+        position: relative;
+        transition: all 0.1s;
+      }
+      .field-item.selected .field-checkbox {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .field-item.selected .field-checkbox::after {
+        content: "";
+        position: absolute;
+        left: 3px;
+        top: 1px;
+        width: 6px;
+        height: 9px;
+        border: 1.5px solid #000;
+        border-top: none;
+        border-left: none;
+        transform: rotate(45deg);
+      }
+
+      .field-path {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .field-path .leaf {
+        color: var(--text);
+      }
+      .field-path .leaf.attr {
+        color: var(--accent2);
+      }
+
+      .field-count {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--border-active);
+        flex-shrink: 0;
+      }
+
+      /* RIGHT PANEL */
+      .right-panel {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .right-header {
+        border-bottom: 1px solid var(--border);
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+        background: var(--surface);
+      }
+
+      .preview-title {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .preview-stats {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .preview-stats span {
+        color: var(--accent);
+      }
+
+      /* TABLE */
+      .table-wrap {
+        flex: 1;
+        overflow: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+
+      .preview-empty {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+        gap: 12px;
+      }
+      .preview-empty .big-icon {
+        font-size: 40px;
+        opacity: 0.3;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      thead th {
+        position: sticky;
+        top: 0;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-active);
+        padding: 10px 14px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--accent);
+        white-space: nowrap;
+        letter-spacing: 0.04em;
+        z-index: 10;
+      }
+      thead th .th-remove {
+        display: inline-block;
+        margin-left: 8px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 10px;
+        transition: color 0.1s;
+      }
+      thead th .th-remove:hover {
+        color: var(--danger);
+      }
+
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 0.08s;
+      }
+      tbody tr:hover {
+        background: var(--surface2);
+      }
+
+      tbody td {
+        padding: 8px 14px;
+        color: var(--text);
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      tbody td.empty {
+        color: var(--border-active);
+        font-style: italic;
+      }
+
+      /* FOOTER */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 10px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--surface);
+        flex-shrink: 0;
+      }
+
+      .footer-info {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .footer-info span {
+        color: var(--text);
+      }
+
+      .export-btn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--accent);
+        color: #000;
+        border: none;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 9px 22px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .export-btn:hover {
+        background: #f5ff40;
+        transform: translateY(-1px);
+      }
+      .export-btn:active {
+        transform: translateY(0);
+      }
+      .export-btn:disabled {
+        background: var(--border);
+        color: var(--muted);
+        cursor: not-allowed;
+        transform: none;
+      }
+      .export-btn .btn-icon {
+        font-size: 14px;
+      }
+
+      /* SELECTED TAGS */
+      .selected-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 8px;
+        flex-shrink: 0;
+      }
+      .tag {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(232, 255, 0, 0.08);
+        border: 1px solid rgba(232, 255, 0, 0.2);
+        border-radius: 3px;
+        padding: 3px 8px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--accent);
+      }
+      .tag-remove {
+        cursor: pointer;
+        color: var(--muted);
+        line-height: 1;
+        font-size: 12px;
+        transition: color 0.1s;
+      }
+      .tag-remove:hover {
+        color: var(--danger);
+      }
+
+      /* NOTIFICATIONS */
+      .toast {
+        position: fixed;
+        bottom: 60px;
+        right: 24px;
+        background: var(--surface2);
+        border: 1px solid var(--border-active);
+        border-left: 3px solid var(--accent2);
+        border-radius: 4px;
+        padding: 12px 16px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text);
+        z-index: 100;
+        transform: translateX(120%);
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        max-width: 280px;
+      }
+      .toast.show {
+        transform: translateX(0);
+      }
+      .toast.error {
+        border-left-color: var(--danger);
+      }
+
+      /* SCROLLBAR */
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--border-active);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <div class="logo">XML<span> → </span>XLS<span> //</span> Extractor</div>
+        <div class="subtitle">
+          Generic field extractor · any depth · any schema
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- LEFT: Upload + Field selector -->
+      <div class="left-panel">
+        <!-- Upload -->
+        <div class="panel-section">
+          <div class="section-label">01 / XML Datei</div>
+          <div class="dropzone" id="dropzone">
+            <input
+              type="file"
+              id="fileInput"
+              accept=".xml,text/xml,application/xml"
+            />
+            <div class="dropzone-icon">⬡</div>
+            <div class="dropzone-text">
+              <strong>XML hochladen</strong>
+              Drag & Drop oder klicken
+            </div>
+          </div>
+          <div class="file-info" id="fileInfo">
+            <div class="file-dot"></div>
+            <span class="file-name" id="fileName"></span>
+            <span class="file-size" id="fileSize"></span>
+          </div>
+          <div class="parse-progress" id="parseProgress">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">
+              Analysiere Struktur…
+            </div>
+          </div>
+        </div>
+
+        <!-- Field selector -->
+        <div class="panel-section">
+          <div class="section-label">02 / Felder auswählen</div>
+          <div class="tree-controls">
+            <button class="tree-btn" id="btnAll" onclick="selectAll()">
+              Alle
+            </button>
+            <button class="tree-btn" id="btnNone" onclick="selectNone()">
+              Keine
+            </button>
+            <button
+              class="tree-btn active"
+              id="btnFlat"
+              onclick="setView('flat')"
+            >
+              Flat
+            </button>
+            <button class="tree-btn" id="btnSorted" onclick="setView('sorted')">
+              A–Z
+            </button>
+          </div>
+          <input
+            class="search-field"
+            id="searchField"
+            type="text"
+            placeholder="Felder filtern…"
+            oninput="filterFields(this.value)"
+          />
+          <div class="field-tree-wrap" id="fieldTree">
+            <div class="empty-state">
+              ← XML hochladen<br />um Felder zu erkunden
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Preview table -->
+      <div class="right-panel">
+        <div class="right-header">
+          <div class="preview-title">Vorschau</div>
+          <div class="preview-stats" id="previewStats">—</div>
+        </div>
+        <div class="table-wrap" id="tableWrap">
+          <div class="preview-empty">
+            <div class="big-icon">⬡</div>
+            <div>Felder auswählen für Vorschau</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-info" id="footerInfo">Kein Dokument geladen</div>
+      <button
+        class="export-btn"
+        id="exportBtn"
+        disabled
+        onclick="exportExcel()"
+      >
+        <span class="btn-icon">↓</span> Excel exportieren
+      </button>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ─── STATE ───────────────────────────────────────────────
+      let allFields = []; // [{path, leafName, isAttr, count}]
+      let selectedFields = new Set();
+      let parsedRows = []; // [{rowIndex, data: {path: value}}]
+      let currentView = "flat";
+      let filterQuery = "";
+      let xmlFileName = "";
+      let totalNodes = 0;
+
+      // ─── FILE HANDLING ────────────────────────────────────────
+      const dropzone = document.getElementById("dropzone");
+      const fileInput = document.getElementById("fileInput");
+
+      dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropzone.classList.add("drag-over");
+      });
+      dropzone.addEventListener("dragleave", () =>
+        dropzone.classList.remove("drag-over"),
+      );
+      dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (file) handleFile(file);
+      });
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files[0]) handleFile(e.target.files[0]);
+      });
+
+      function handleFile(file) {
+        if (
+          !file.name.toLowerCase().endsWith(".xml") &&
+          file.type &&
+          !file.type.includes("xml")
+        ) {
+          showToast("Nur XML-Dateien erlaubt", true);
+          return;
+        }
+        xmlFileName = file.name.replace(".xml", "");
+        document.getElementById("fileName").textContent = file.name;
+        document.getElementById("fileSize").textContent = formatBytes(
+          file.size,
+        );
+        document.getElementById("fileInfo").classList.add("visible");
+        document.getElementById("parseProgress").classList.add("visible");
+        setProgress(0, "Lese Datei…");
+
+        const reader = new FileReader();
+        reader.onload = (e) => parseXML(e.target.result);
+        reader.readAsText(file);
+      }
+
+      function formatBytes(b) {
+        if (b < 1024) return b + " B";
+        if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
+        return (b / 1048576).toFixed(1) + " MB";
+      }
+
+      // ─── XML PARSER ───────────────────────────────────────────
+      function parseXML(xmlText) {
+        setProgress(10, "Parse XML…");
+
+        let parser, xmlDoc;
+        try {
+          parser = new DOMParser();
+          xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const err = xmlDoc.querySelector("parsererror");
+          if (err)
+            throw new Error(
+              "XML Parse-Fehler: " + err.textContent.slice(0, 80),
+            );
+        } catch (e) {
+          showToast(e.message, true);
+          document.getElementById("parseProgress").classList.remove("visible");
+          return;
+        }
+
+        setProgress(30, "Erkunde Struktur…");
+
+        // Discover all unique leaf paths
+        const fieldMap = new Map(); // path → count
+        const rowData = []; // array of flat {path→value} objects per "record"
+
+        // Strategy: find the most-repeated element to use as row anchor
+        // We do a two-pass: 1) find all paths, 2) find repeat-element, extract rows
+
+        const allPaths = new Map();
+
+        function walkDiscover(node, path) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.localName;
+            const currPath = path ? `${path}/${tag}` : tag;
+
+            // Attributes
+            for (const attr of node.attributes) {
+              const attrPath = `${currPath}/@${attr.name}`;
+              allPaths.set(attrPath, (allPaths.get(attrPath) || 0) + 1);
+            }
+
+            // If leaf (no element children)
+            const hasElementChild = Array.from(node.childNodes).some(
+              (c) => c.nodeType === Node.ELEMENT_NODE,
+            );
+            if (!hasElementChild) {
+              allPaths.set(currPath, (allPaths.get(currPath) || 0) + 1);
+            }
+
+            for (const child of node.children) {
+              walkDiscover(child, currPath);
+            }
+          }
+        }
+
+        walkDiscover(xmlDoc.documentElement, "");
+        setProgress(50, `${allPaths.size} Felder gefunden…`);
+
+        // Find most common repeating element (the row element)
+        // = element whose direct parent path has highest count
+        const parentCounts = new Map();
+        for (const [path, count] of allPaths) {
+          const parts = path.startsWith("@") ? [] : path.split("/");
+          if (parts.length >= 2) {
+            const parent = parts.slice(0, -1).join("/");
+            parentCounts.set(
+              parent,
+              Math.max(parentCounts.get(parent) || 0, count),
+            );
+          }
+        }
+
+        // The row anchor = path with highest count at a reasonable depth
+        let rowAnchorPath = null;
+        let rowAnchorCount = 0;
+        for (const [path, count] of parentCounts) {
+          if (count > rowAnchorCount) {
+            rowAnchorCount = count;
+            rowAnchorPath = path;
+          }
+        }
+
+        setProgress(65, "Extrahiere Zeilen…");
+
+        // Extract rows using the anchor
+        if (rowAnchorPath && rowAnchorCount > 1) {
+          // Find all elements matching the anchor path
+          const anchorTag = rowAnchorPath.split("/").pop();
+          const anchorElements = xmlDoc.getElementsByTagNameNS("*", anchorTag);
+
+          for (const anchorEl of anchorElements) {
+            const row = {};
+            extractFlatData(anchorEl, "", row);
+            rowData.push(row);
+          }
+        } else {
+          // Fallback: single row = whole document
+          const row = {};
+          extractFlatData(xmlDoc.documentElement, "", row);
+          rowData.push(row);
+        }
+
+        setProgress(85, "Baue Feldliste…");
+
+        // Build field list from actual row data
+        const fieldCountMap = new Map();
+        for (const row of rowData) {
+          for (const key of Object.keys(row)) {
+            fieldCountMap.set(key, (fieldCountMap.get(key) || 0) + 1);
+          }
+        }
+
+        allFields = Array.from(fieldCountMap.entries()).map(([path, count]) => {
+          const parts = path.split("/");
+          const leaf = parts[parts.length - 1];
+          const isAttr = leaf.startsWith("@");
+          return {
+            path,
+            leafName: isAttr ? leaf.slice(1) : leaf,
+            isAttr,
+            count,
+          };
+        });
+
+        parsedRows = rowData;
+        totalNodes = rowData.length;
+
+        setProgress(100, "Fertig!");
+        setTimeout(() => {
+          document.getElementById("parseProgress").classList.remove("visible");
+        }, 600);
+
+        document.getElementById("footerInfo").innerHTML =
+          `<span>${totalNodes}</span> Datensätze · <span>${allFields.length}</span> Felder erkannt`;
+
+        selectedFields.clear();
+        renderFieldTree();
+        renderTable();
+        showToast(`${totalNodes} Datensätze, ${allFields.length} Felder`);
+      }
+
+      function extractFlatData(node, path, row) {
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+        const tag = node.localName;
+        const currPath = path ? `${path}/${tag}` : tag;
+
+        // Attributes
+        for (const attr of node.attributes) {
+          row[`${currPath}/@${attr.name}`] = attr.value;
+        }
+
+        const hasElementChild = Array.from(node.childNodes).some(
+          (c) => c.nodeType === Node.ELEMENT_NODE,
+        );
+        if (!hasElementChild) {
+          const text = node.textContent.trim();
+          if (text) row[currPath] = text;
+        }
+
+        for (const child of node.children) {
+          extractFlatData(child, currPath, row);
+        }
+      }
+
+      // ─── FIELD TREE ───────────────────────────────────────────
+      function renderFieldTree() {
+        const container = document.getElementById("fieldTree");
+        if (allFields.length === 0) {
+          container.innerHTML =
+            '<div class="empty-state">Keine Felder gefunden</div>';
+          return;
+        }
+
+        let fields = [...allFields];
+
+        if (filterQuery) {
+          const q = filterQuery.toLowerCase();
+          fields = fields.filter(
+            (f) =>
+              f.path.toLowerCase().includes(q) ||
+              f.leafName.toLowerCase().includes(q),
+          );
+        }
+
+        if (currentView === "sorted") {
+          fields.sort((a, b) => a.path.localeCompare(b.path));
+        }
+
+        const html = fields
+          .map((f) => {
+            const sel = selectedFields.has(f.path);
+            const pathParts = f.path.split("/");
+            const prefix = pathParts.slice(0, -1).join("/");
+            const leaf = pathParts[pathParts.length - 1];
+            const leafClass = f.isAttr ? "leaf attr" : "leaf";
+            const pathDisplay = prefix
+              ? `<span style="color:var(--muted)">${prefix}/</span><span class="${leafClass}">${leaf}</span>`
+              : `<span class="${leafClass}">${leaf}</span>`;
+
+            return `<div class="field-item ${sel ? "selected" : ""}" onclick="toggleField('${escHtml(f.path)}')">
+      <div class="field-checkbox"></div>
+      <div class="field-path" title="${escHtml(f.path)}">${pathDisplay}</div>
+      <div class="field-count">${f.count}</div>
+    </div>`;
+          })
+          .join("");
+
+        container.innerHTML =
+          html || '<div class="empty-state">Keine Treffer</div>';
+      }
+
+      function toggleField(path) {
+        if (selectedFields.has(path)) selectedFields.delete(path);
+        else selectedFields.add(path);
+        renderFieldTree();
+        renderTable();
+        document.getElementById("exportBtn").disabled =
+          selectedFields.size === 0;
+      }
+
+      function selectAll() {
+        allFields.forEach((f) => selectedFields.add(f.path));
+        renderFieldTree();
+        renderTable();
+        document.getElementById("exportBtn").disabled =
+          selectedFields.size === 0;
+      }
+
+      function selectNone() {
+        selectedFields.clear();
+        renderFieldTree();
+        renderTable();
+        document.getElementById("exportBtn").disabled = true;
+      }
+
+      function setView(v) {
+        currentView = v;
+        document
+          .getElementById("btnFlat")
+          .classList.toggle("active", v === "flat");
+        document
+          .getElementById("btnSorted")
+          .classList.toggle("active", v === "sorted");
+        renderFieldTree();
+      }
+
+      function filterFields(q) {
+        filterQuery = q;
+        renderFieldTree();
+      }
+
+      // ─── PREVIEW TABLE ────────────────────────────────────────
+      const PREVIEW_LIMIT = 200;
+
+      function renderTable() {
+        const container = document.getElementById("tableWrap");
+        const stats = document.getElementById("previewStats");
+
+        if (selectedFields.size === 0) {
+          container.innerHTML =
+            '<div class="preview-empty"><div class="big-icon">⬡</div><div>Felder auswählen für Vorschau</div></div>';
+          stats.textContent = "—";
+          return;
+        }
+
+        const cols = Array.from(selectedFields);
+        const rows = parsedRows.slice(0, PREVIEW_LIMIT);
+        const colLabels = cols.map((c) => c.split("/").pop().replace("@", ""));
+
+        const headerCells = cols
+          .map(
+            (c, i) =>
+              `<th>${escHtml(colLabels[i])}<span class="th-remove" onclick="toggleField('${escHtml(c)}')" title="Spalte entfernen">✕</span></th>`,
+          )
+          .join("");
+
+        const bodyRows = rows
+          .map((row) => {
+            const cells = cols
+              .map((c) => {
+                const val = row[c];
+                return val
+                  ? `<td title="${escHtml(val)}">${escHtml(val)}</td>`
+                  : `<td class="empty">—</td>`;
+              })
+              .join("");
+            return `<tr>${cells}</tr>`;
+          })
+          .join("");
+
+        container.innerHTML = `
+    <table>
+      <thead><tr>${headerCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>`;
+
+        const total = parsedRows.length;
+        stats.innerHTML = `<span>${total}</span> Zeilen · <span>${cols.length}</span> Spalten${total > PREVIEW_LIMIT ? ` · Vorschau: ${PREVIEW_LIMIT}` : ""}`;
+      }
+
+      // ─── EXCEL EXPORT ─────────────────────────────────────────
+      function exportExcel() {
+        if (selectedFields.size === 0 || parsedRows.length === 0) return;
+
+        const cols = Array.from(selectedFields);
+        const colLabels = cols.map((c) => c.split("/").pop().replace("@", ""));
+
+        const sheetData = [colLabels];
+
+        for (const row of parsedRows) {
+          sheetData.push(cols.map((c) => row[c] ?? ""));
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+        // Style header row
+        const range = XLSX.utils.decode_range(ws["!ref"]);
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+          if (cell) {
+            cell.s = {
+              font: { bold: true, name: "Arial", sz: 10 },
+              fill: { fgColor: { rgb: "E8FF00" }, patternType: "solid" },
+              alignment: { horizontal: "left" },
+            };
+          }
+        }
+
+        // Auto column widths
+        const colWidths = colLabels.map((label, ci) => {
+          let max = label.length;
+          for (const row of parsedRows) {
+            const val = String(row[cols[ci]] ?? "");
+            if (val.length > max) max = val.length;
+          }
+          return { wch: Math.min(max + 2, 40) };
+        });
+        ws["!cols"] = colWidths;
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Extraktion");
+
+        const fname = `${xmlFileName || "export"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        XLSX.writeFile(wb, fname);
+        showToast(`${parsedRows.length} Zeilen exportiert`);
+      }
+
+      // ─── UTILS ────────────────────────────────────────────────
+      function setProgress(pct, text) {
+        document.getElementById("progressFill").style.width = pct + "%";
+        document.getElementById("progressText").textContent = text;
+      }
+
+      function escHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      let toastTimer;
+      function showToast(msg, isError = false) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast show" + (isError ? " error" : "");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+      }
+    </script>
+  </body>
+</html>
