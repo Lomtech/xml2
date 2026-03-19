@@ -654,7 +654,7 @@
           <div class="fscroll">
             <div style="margin-bottom:12px">
               <div class="cfg-row"><span class="cfg-lbl">Root-Tag</span><input class="cfg-inp" id="cfgRoot" value="data" placeholder="data" oninput="e2xPreview()"/></div>
-              <div class="cfg-row"><span class="cfg-lbl">Zeilen-Tag</span><input class="cfg-inp" id="cfgRow" value="record" placeholder="record" oninput="e2xPreview()"/></div>
+              <div class="cfg-row"><span class="cfg-lbl">Zeilen-Tag</span><input class="cfg-inp" id="cfgRow" value="record" placeholder="auto (aus Pfad)" oninput="e2xPreview()" style="color:var(--muted);font-style:italic" title="Wird automatisch aus dem ersten Pfad-Segment ermittelt"/></div>
               <div class="cfg-row"><span class="cfg-lbl">Encoding</span>
                 <select class="cfg-sel" id="cfgEnc" onchange="e2xPreview()">
                   <option value="UTF-8" selected>UTF-8</option>
@@ -806,7 +806,8 @@ function loadFileXML(file){
 /* ══════════════════════════════════════
    FILE HANDLING — EXCEL
 ══════════════════════════════════════ */
-var eHeaders=[], eRows=[], eFileName='', eSheets=[], eActiveSheet=0, eWorkbook=null, eColMap={};
+var eHeaders=[], eRows=[], eFileName='', eSheets=[], eActiveSheet=0, eWorkbook=null;
+var eColMap={}, eColPaths=[], eHdrRows=1;
 var dzEl2=$('dz2');
 $('fi2').addEventListener('change',function(e){ if(e.target.files[0]) loadFileExcel(e.target.files[0]) });
 dzEl2.addEventListener('dragover',function(e){ e.preventDefault(); dzEl2.classList.add('over') });
@@ -846,66 +847,149 @@ function selectSheet(idx){ eActiveSheet=idx; renderSheetTabs(); loadSheet(idx) }
 
 function loadSheet(idx){
   var ws=eWorkbook.Sheets[eSheets[idx]];
-  var json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  if(json.length<1){ eHeaders=[]; eRows=[]; buildColMap(); e2xPreview(); return }
-  eHeaders=json[0].map(function(h){ return String(h).trim() });
+  var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  if(!raw.length){ eHeaders=[]; eRows=[]; eColPaths=[]; buildColMap(); e2xPreview(); return }
+
+  // ── Detect number of header rows via merged cells ──
+  var merges=ws['!merges']||[];
+  var lastMergeRow=0;
+  for(var m=0;m<merges.length;m++) if(merges[m].e.r>lastMergeRow) lastMergeRow=merges[m].e.r;
+  eHdrRows=merges.length>0 ? lastMergeRow+1 : 1;
+
+  var numCols=0;
+  for(var r=0;r<eHdrRows;r++) if(raw[r]&&raw[r].length>numCols) numCols=raw[r].length;
+
+  // ── Forward-fill each header row (merged cells only have value at start cell) ──
+  var grid=[];
+  for(var r=0;r<eHdrRows;r++){
+    var hrow=raw[r]||[], filled=[], last='';
+    for(var c=0;c<numCols;c++){
+      var v=String(hrow[c]||'').trim();
+      if(v) last=v; else v=last;
+      filled.push(v);
+    }
+    grid.push(filled);
+  }
+
+  // ── Build full path per column: unique consecutive segments top → bottom ──
+  eColPaths=[];
+  eHeaders=[];
+  for(var c=0;c<numCols;c++){
+    var parts=[],prev='';
+    for(var r=0;r<eHdrRows;r++){
+      var seg=grid[r][c];
+      if(seg&&seg!==prev){ parts.push(seg); prev=seg; }
+    }
+    var path=parts.join('/');
+    eColPaths.push(path);
+    eHeaders.push(path);
+  }
+
+  // ── Read data rows (skip header rows) ──
   eRows=[];
-  for(var i=1;i<json.length;i++){
+  for(var i=eHdrRows;i<raw.length;i++){
     var row={},empty=true;
     for(var c=0;c<eHeaders.length;c++){
-      var v=json[i][c]; row[eHeaders[c]]=v!==undefined&&v!==null?String(v):'';
+      var v=raw[i][c];
+      row[eHeaders[c]]=v!==undefined&&v!==null?String(v):'';
       if(row[eHeaders[c]]!=='') empty=false;
     }
     if(!empty) eRows.push(row);
   }
+
   buildColMap();
   $('ebtn2').disabled=eRows.length===0; setFooterE2X(); e2xPreview();
-  showToast(eRows.length+' Zeilen, '+eHeaders.length+' Spalten geladen');
+  var hdrtxt=eHdrRows>1?' ('+eHdrRows+' Hierarchie-Kopfzeilen erkannt)':'';
+  showToast(eRows.length+' Zeilen, '+eHeaders.length+' Spalten'+hdrtxt);
 }
 
 function buildColMap(){
   var map=$('colMap'); eColMap={};
   var h='';
-  for(var i=0;i<eHeaders.length;i++){
-    var hdr=eHeaders[i], safe=sanitizeTag(hdr); eColMap[hdr]=safe;
-    h+='<div class="cfg-row"><span class="cfg-lbl" style="font-size:9px;min-width:100px" title="'+esc(hdr)+'">'+esc(hdr.length>14?hdr.substring(0,14)+'…':hdr)+'</span>';
-    h+='<input class="cfg-inp" value="'+esc(safe)+'" data-col="'+esc(hdr)+'" oninput="updateColMap(this)"/></div>';
+  for(var i=0;i<eColPaths.length;i++){
+    var path=eColPaths[i];
+    var segs=path.split('/');
+    var dispPath=segs.length>2?'…/'+segs.slice(-2).join('/'):path;
+    // Default tag override = sanitized last segment
+    var lastSeg=segs[segs.length-1];
+    // Strip [KEY] bracket for the XML tag default, keep bracket info as badge
+    var kvM=lastSeg.match(/^(.*)\[([^\]]*)\]$/);
+    var defTag=sanitizeTag(kvM?kvM[1]:lastSeg);
+    eColMap[i]=defTag;
+    h+='<div class="cfg-row" title="'+esc(path)+'">';
+    h+='<span class="cfg-lbl" style="font-size:9px;min-width:110px;color:var(--muted)">'+esc(dispPath.length>18?dispPath.substring(0,18)+'…':dispPath)+'</span>';
+    h+='<input class="cfg-inp" value="'+esc(defTag)+'" data-ci="'+i+'" oninput="updateColMap(this)"/>';
+    h+='</div>';
   }
   map.innerHTML=h||'<div class="empty-msg">Keine Spalten</div>';
 }
 
-function updateColMap(inp){ eColMap[inp.getAttribute('data-col')]=inp.value.trim(); e2xPreview() }
-function sanitizeTag(s){ var t=s.replace(/[^a-zA-Z0-9_.\-]/g,'_').replace(/^([0-9.\-])/,'_$1'); return t||'field' }
+function updateColMap(inp){ eColMap[parseInt(inp.getAttribute('data-ci'))]=inp.value.trim(); e2xPreview() }
+function sanitizeTag(s){ var t=String(s).replace(/[^a-zA-Z0-9_.\-]/g,'_').replace(/^([0-9.\-])/,'_$1'); return t||'field' }
 
 /* ══════════════════════════════════════
-   E2X PREVIEW & EXPORT
+   E2X NESTED XML BUILDER
 ══════════════════════════════════════ */
-function e2xPreview(){
-  var wrap=$('twrap2'),stats=$('rstats2');
-  if(!eHeaders.length){ wrap.innerHTML='<div class="pempty"><div class="icon">⬡</div><div>Excel hochladen für XML-Vorschau</div></div>'; stats.innerHTML='—'; return }
-  var rootTag=$('cfgRoot').value.trim()||'data';
-  var rowTag=$('cfgRow').value.trim()||'record';
-  var enc=$('cfgEnc').value, mode=$('cfgMode').value;
-  var limit=Math.min(eRows.length,50);
-  var xml='<?xml version="1.0" encoding="'+enc+'"?>\n';
-  xml+='<'+rootTag+'>\n';
-  for(var i=0;i<limit;i++) xml+=buildRowXML(eRows[i],rowTag,mode,'  ');
-  if(eRows.length>limit) xml+='  <!-- …'+(eRows.length-limit)+' weitere Zeilen … -->\n';
-  xml+='</'+rootTag+'>';
-  wrap.innerHTML='<div class="xml-preview">'+highlightXML(xml)+'</div>';
-  stats.innerHTML='<b>'+eRows.length+'</b> Zeilen · <b>'+eHeaders.length+'</b> Spalten';
-}
 
-function buildRowXML(row,rowTag,mode,indent){
-  var attrs='',children='';
-  for(var i=0;i<eHeaders.length;i++){
-    var hdr=eHeaders[i],tag=eColMap[hdr],val=row[hdr]||'';
-    if(!tag) continue;
-    if(mode==='attributes'){ attrs+=' '+tag+'="'+escXML(val)+'"' }
-    else if(mode==='mixed'&&hdr.charAt(0)==='@'){ attrs+=' '+tag.replace(/^@/,'')+' ="'+escXML(val)+'"' }
-    else{ children+=indent+'  <'+tag+'>'+escXML(val)+'</'+tag+'>\n' }
+// Build one properly nested XML element from a flat data row.
+// Paths like "INVESTMENT/GENERALDATA/INVESTMENTTYPE" → real nesting.
+// Paths like "INVESTMENT/INVESTMENTIDENTIFIERS/INVESTMENTIDENTIFIER[GFIIN]"
+//   → <INVESTMENTIDENTIFIER key="GFIIN">VALUE</INVESTMENTIDENTIFIER>
+function buildNestedRowXML(row, rowTag, indent){
+  var root={tag:rowTag, attrs:{}, children:[], value:null};
+
+  for(var ci=0;ci<eColPaths.length;ci++){
+    var tagOverride=eColMap[ci];
+    if(tagOverride==='') continue; // column skipped
+    var path=eColPaths[ci];
+    var val=row[path]||'';
+    var segs=path.split('/');
+
+    var node=root;
+    for(var s=0;s<segs.length;s++){
+      var seg=segs[s];
+      var kvM=seg.match(/^(.*)\[([^\]]*)\]$/);
+      var tagName=kvM?kvM[1]:seg;
+      var kvKey=kvM?kvM[2]:null;
+      // apply override only on the leaf segment
+      if(s===segs.length-1&&tagOverride) tagName=tagOverride;
+
+      if(s===segs.length-1){
+        // Leaf node
+        var leaf={tag:tagName, attrs:{}, children:[], value:val};
+        if(kvKey) leaf.attrs['key']=kvKey;
+        node.children.push(leaf);
+      } else {
+        // Intermediate: reuse last child with same tag (groups siblings correctly)
+        var found=null;
+        for(var k=node.children.length-1;k>=0;k--){
+          if(node.children[k].tag===tagName && node.children[k].value===null && !Object.keys(node.children[k].attrs).length){
+            found=node.children[k]; break;
+          }
+        }
+        if(!found){
+          found={tag:tagName, attrs:{}, children:[], value:null};
+          node.children.push(found);
+        }
+        node=found;
+      }
+    }
   }
-  return children ? indent+'<'+rowTag+attrs+'>\n'+children+indent+'</'+rowTag+'>\n' : indent+'<'+rowTag+attrs+'/>\n';
+
+  function render(n, ind){
+    var attrStr='';
+    var akeys=Object.keys(n.attrs);
+    for(var i=0;i<akeys.length;i++) attrStr+=' '+akeys[i]+'="'+escXML(n.attrs[akeys[i]])+'"';
+    if(n.children.length===0){
+      if(n.value===null||n.value==='') return ind+'<'+n.tag+attrStr+'/>\n';
+      return ind+'<'+n.tag+attrStr+'>'+escXML(n.value)+'</'+n.tag+'>\n';
+    }
+    var xml=ind+'<'+n.tag+attrStr+'>\n';
+    for(var i=0;i<n.children.length;i++) xml+=render(n.children[i],ind+'  ');
+    xml+=ind+'</'+n.tag+'>\n';
+    return xml;
+  }
+  return render(root, indent);
 }
 
 function escXML(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;') }
@@ -917,13 +1001,31 @@ function highlightXML(xml){
     .replace(/&lt;!--(.+?)--&gt;/g,'<span style="color:var(--muted)">&lt;!--$1--&gt;</span>');
 }
 
+function e2xPreview(){
+  var wrap=$('twrap2'),stats=$('rstats2');
+  if(!eHeaders.length){ wrap.innerHTML='<div class="pempty"><div class="icon">⬡</div><div>Excel hochladen für XML-Vorschau</div></div>'; stats.innerHTML='—'; return }
+  var rootTag=$('cfgRoot').value.trim()||'data';
+  var enc=$('cfgEnc').value;
+  // Detect row tag: first path segment of first column
+  var rowTag=eColPaths.length>0?eColPaths[0].split('/')[0]:($('cfgRow').value.trim()||'record');
+  var limit=Math.min(eRows.length,10);
+  var xml='<?xml version="1.0" encoding="'+enc+'"?>\n';
+  xml+='<'+rootTag+'>\n';
+  for(var i=0;i<limit;i++) xml+=buildNestedRowXML(eRows[i],rowTag,'  ');
+  if(eRows.length>limit) xml+='  <!-- … '+(eRows.length-limit)+' weitere … -->\n';
+  xml+='</'+rootTag+'>';
+  wrap.innerHTML='<div class="xml-preview">'+highlightXML(xml)+'</div>';
+  var hdrInfo=eHdrRows>1?' · '+eHdrRows+' Kopfzeilen':'';
+  stats.innerHTML='<b>'+eRows.length+'</b> Zeilen · <b>'+eHeaders.length+'</b> Spalten'+hdrInfo;
+}
+
 function doExportXML(){
   if(!eRows.length) return;
   var rootTag=$('cfgRoot').value.trim()||'data';
-  var rowTag=$('cfgRow').value.trim()||'record';
-  var enc=$('cfgEnc').value, mode=$('cfgMode').value;
+  var enc=$('cfgEnc').value;
+  var rowTag=eColPaths.length>0?eColPaths[0].split('/')[0]:(rootTag+'Row');
   var xml='<?xml version="1.0" encoding="'+enc+'"?>\n<'+rootTag+'>\n';
-  for(var i=0;i<eRows.length;i++) xml+=buildRowXML(eRows[i],rowTag,mode,'  ');
+  for(var i=0;i<eRows.length;i++) xml+=buildNestedRowXML(eRows[i],rowTag,'  ');
   xml+='</'+rootTag+'>\n';
   var blob=new Blob([xml],{type:'application/xml;charset='+enc});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
@@ -931,6 +1033,7 @@ function doExportXML(){
   a.click(); URL.revokeObjectURL(a.href);
   showToast(eRows.length+' Zeilen als XML exportiert');
 }
+
 
 /* ══════════════════════════════════════
    XML PARSER HELPERS
@@ -1280,7 +1383,7 @@ function doExport(){
     for(var c=0;c<cols.length;c++){
       var parts=colParts[c];
       if(d<parts.length-1) hrow.push(parts[d]||'');
-      else if(d===parts.length-1) hrow.push(labels[c]);
+      else if(d===parts.length-1) hrow.push(parts[parts.length-1]); // full segment incl. [KEY]
       else hrow.push('');
     }
     headerRows.push(hrow);
