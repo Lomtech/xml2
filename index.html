@@ -1266,15 +1266,107 @@ function doRmCol(e){ var p=e.getAttribute('data-path'); gSelected.delete(p); $('
 ══════════════════════════════════════ */
 function doExport(){
   if(!gSelected.size||!gRows.length) return;
-  var cols=Array.from(gSelected),labels=cols.map(pathLabel),data=[labels];
-  for(var ri=0;ri<gRows.length;ri++){ var row=[]; for(var ci=0;ci<cols.length;ci++){ var v=gRows[ri][cols[ci]]; row.push(v!==undefined?v:'') } data.push(row) }
-  var ws=XLSX.utils.aoa_to_sheet(data);
-  var rng=XLSX.utils.decode_range(ws['!ref']);
-  for(var c=rng.s.c;c<=rng.e.c;c++){ var cell=ws[XLSX.utils.encode_cell({r:0,c:c})]; if(cell) cell.s={font:{bold:true,name:'Arial',sz:10},fill:{fgColor:{rgb:'1E3A5F'},patternType:'solid'},alignment:{horizontal:'left'}} }
-  ws['!cols']=labels.map(function(lbl,ci){ var mx=lbl.length; for(var ri=0;ri<Math.min(gRows.length,100);ri++){ var v=gRows[ri][cols[ci]]; if(v&&v.length>mx) mx=v.length } return{wch:Math.min(mx+2,50)} });
-  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Extraktion');
+  var cols=Array.from(gSelected), labels=cols.map(pathLabel);
+
+  // 1. Split paths into segments
+  var colParts=cols.map(function(path){ return path.split('/') });
+  var maxDepth=0;
+  for(var i=0;i<colParts.length;i++) if(colParts[i].length>maxDepth) maxDepth=colParts[i].length;
+
+  // 2. Build one header row per depth level
+  var headerRows=[];
+  for(var d=0;d<maxDepth;d++){
+    var hrow=[];
+    for(var c=0;c<cols.length;c++){
+      var parts=colParts[c];
+      if(d<parts.length-1) hrow.push(parts[d]||'');
+      else if(d===parts.length-1) hrow.push(labels[c]);
+      else hrow.push('');
+    }
+    headerRows.push(hrow);
+  }
+
+  var merges=[];
+
+  // 3. Horizontal merges: consecutive cols sharing same prefix at depth d
+  for(var d=0;d<maxDepth;d++){
+    var c=0;
+    while(c<cols.length){
+      if(!headerRows[d][c]){ c++; continue }
+      var prefix=colParts[c].slice(0,d+1).join('/');
+      var end=c;
+      while(end+1<cols.length && colParts[end+1].slice(0,d+1).join('/')===prefix) end++;
+      if(end>c){
+        merges.push({s:{r:d,c:c},e:{r:d,c:end}});
+        for(var m=c+1;m<=end;m++) headerRows[d][m]='';
+      }
+      c=end+1;
+    }
+  }
+
+  // 4. Vertical merges: leaf shallower than maxDepth spans downward
+  for(var c=0;c<cols.length;c++){
+    var leafD=colParts[c].length-1;
+    if(leafD<maxDepth-1){
+      merges.push({s:{r:leafD,c:c},e:{r:maxDepth-1,c:c}});
+      for(var d=leafD+1;d<maxDepth;d++) headerRows[d][c]='';
+    }
+  }
+
+  // 5. Assemble sheet
+  var dataRows=gRows.map(function(row){
+    return cols.map(function(col){ var v=row[col]; return v!==undefined?v:'' });
+  });
+  var ws=XLSX.utils.aoa_to_sheet(headerRows.concat(dataRows));
+  ws['!merges']=merges;
+
+  // 6. Style header rows – progressively lighter blue per level
+  var levelBG=['1D4ED8','1E56C8','2563EB','3B82F6','60A5FA','93C5FD'];
+  var levelFG=['FFFFFF','FFFFFF','FFFFFF','FFFFFF','1E3A5F','1E3A5F'];
+  for(var d=0;d<maxDepth;d++){
+    var bg=levelBG[Math.min(d,levelBG.length-1)];
+    var fg=levelFG[Math.min(d,levelFG.length-1)];
+    for(var c=0;c<cols.length;c++){
+      var ref=XLSX.utils.encode_cell({r:d,c:c});
+      if(!ws[ref]) ws[ref]={v:'',t:'s'};
+      ws[ref].s={
+        font:{bold:true,name:'Calibri',sz:d===maxDepth-1?9:10,color:{rgb:fg}},
+        fill:{fgColor:{rgb:bg},patternType:'solid'},
+        alignment:{horizontal:'center',vertical:'center',wrapText:false},
+        border:{bottom:{style:'medium',color:{rgb:'BFDBFE'}},right:{style:'thin',color:{rgb:'BFDBFE'}}}
+      };
+    }
+  }
+
+  // 7. Style data rows – alternating stripe
+  for(var ri=0;ri<gRows.length;ri++){
+    var rowBG=ri%2===0?'FFFFFF':'F0F4FF';
+    for(var ci=0;ci<cols.length;ci++){
+      var ref2=XLSX.utils.encode_cell({r:maxDepth+ri,c:ci});
+      if(ws[ref2]) ws[ref2].s={
+        font:{name:'Calibri',sz:9},
+        fill:{fgColor:{rgb:rowBG},patternType:'solid'},
+        alignment:{horizontal:'left'},
+        border:{bottom:{style:'thin',color:{rgb:'E2E8F0'}},right:{style:'thin',color:{rgb:'E2E8F0'}}}
+      };
+    }
+  }
+
+  // 8. Column widths
+  ws['!cols']=labels.map(function(lbl,ci){
+    var mx=lbl.length;
+    for(var ri=0;ri<Math.min(gRows.length,100);ri++){ var v=gRows[ri][cols[ci]]; if(v&&v.length>mx) mx=v.length }
+    return{wch:Math.min(mx+3,50)};
+  });
+
+  // 9. Row heights for header rows
+  ws['!rows']=[];
+  for(var d=0;d<maxDepth;d++) ws['!rows'].push({hpt:20});
+
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Extraktion');
   XLSX.writeFile(wb,(gFileName||'export')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
-  showToast(gRows.length+' Zeilen exportiert');
+  showToast(gRows.length+' Zeilen · '+maxDepth+' Hierarchie-Ebenen exportiert');
 }
 
 /* ══════════════════════════════════════
