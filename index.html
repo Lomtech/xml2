@@ -512,8 +512,8 @@
           </div>
           <div class="fbar" id="fbar">
             <div class="fdot"></div>
-            <span class="fname" id="fname"></span
-            ><span class="fsize" id="fsize"></span>
+            <span class="fname" id="fname"></span>
+            <span class="fsize" id="fsize"></span>
           </div>
           <div class="pgwrap" id="pgwrap">
             <div class="pgtrack"><div class="pgfill" id="pgfill"></div></div>
@@ -577,7 +577,7 @@
         gFileName = "";
 
       /* STORAGE */
-      var SKEY = "xmlex_v5";
+      var SKEY = "xmlex_v6";
       function stateSave() {
         try {
           localStorage.setItem(
@@ -646,7 +646,13 @@
         setPg(0, "Lese Datei…");
         var r = new FileReader();
         r.onload = function (e) {
-          parseXML(e.target.result);
+          try {
+            parseXML(e.target.result);
+          } catch (err) {
+            hidePg();
+            showToast("Fehler: " + err.message, true);
+            console.error(err);
+          }
         };
         r.readAsText(file);
       }
@@ -659,95 +665,212 @@
       }
 
       /* ============================================================
-   PARSER
-   Verified against real namespaced XML (xmlns="...").
-   Key design:
-   - tagUC(node): returns uppercase localName, strips namespace prefix
-   - nsFind(parent,tag): uses getElementsByTagNameNS('*',tag) which works
-     regardless of default or prefixed XML namespaces
-   - Row anchor: element with highest direct-child repeat count, ties broken
-     by shallowest depth — correctly picks INVESTMENT over INVESTMENTIDENTIFIER
-   - walkNodeAt(node, fullPath, row): fullPath is the COMPLETE path for THIS
-     node (pre-built by caller), so we never double-append the tag name
-   ============================================================ */
+         PARSER — completely rewritten for robustness
+         ============================================================ */
 
-      function tagUC(node) {
-        var n = node.localName || node.tagName || "";
-        if (n.indexOf(":") !== -1) n = n.split(":").pop();
+      /* Get a clean tag name: strip namespace prefix, uppercase */
+      function getTag(node) {
+        var n = node.localName || node.nodeName || "";
+        var i = n.indexOf(":");
+        if (i !== -1) n = n.substring(i + 1);
         return n.toUpperCase();
       }
 
-      /* Namespace-safe search: works for xmlns= documents AND plain HTML-parsed docs */
-      function nsFind(parent, localTag) {
-        var r = Array.from(parent.getElementsByTagNameNS("*", localTag));
-        if (!r.length) r = Array.from(parent.getElementsByTagName(localTag));
-        if (!r.length)
-          r = Array.from(parent.getElementsByTagName(localTag.toLowerCase()));
-        return r;
+      /* Collect direct element children grouped by tag */
+      function childGroups(node) {
+        var groups = {};
+        var order = [];
+        for (var i = 0; i < node.childNodes.length; i++) {
+          var ch = node.childNodes[i];
+          if (ch.nodeType !== 1) continue; // elements only
+          var t = getTag(ch);
+          if (!groups[t]) {
+            groups[t] = [];
+            order.push(t);
+          }
+          groups[t].push(ch);
+        }
+        return { groups: groups, order: order };
       }
 
-      /* Group direct children by uppercase local tag name */
-      function groupKids(node) {
-        var g = {};
-        for (var i = 0; i < node.children.length; i++) {
-          var t = tagUC(node.children[i]);
-          if (!g[t]) g[t] = [];
-          g[t].push(node.children[i]);
+      /* Check if a node is a leaf (no element children) */
+      function isLeaf(node) {
+        for (var i = 0; i < node.childNodes.length; i++) {
+          if (node.childNodes[i].nodeType === 1) return false;
         }
-        return g;
+        return true;
       }
 
-      /* Walk node where `path` is the ALREADY-COMPLETE path for this node.
-   Children get path = path + '/' + childTag  (or indexed variant) */
-      function walkNodeAt(node, path, row, kvMap) {
-        /* attributes */
-        for (var ai = 0; ai < node.attributes.length; ai++) {
-          var a = node.attributes[ai];
-          if (a.name.indexOf(":") === -1)
-            row[path + "/@" + a.name.toUpperCase()] = a.value;
+      /* Get text content of a node (direct text only for mixed content) */
+      function getText(node) {
+        var t = "";
+        for (var i = 0; i < node.childNodes.length; i++) {
+          var cn = node.childNodes[i];
+          if (cn.nodeType === 3 || cn.nodeType === 4) t += cn.nodeValue;
         }
-        /* leaf */
-        if (!node.children.length) {
-          row[path] = node.textContent.trim();
+        return t.trim();
+      }
+
+      /* Find all elements with a given local tag name (case-insensitive, namespace-agnostic) */
+      function findAll(root, tagUpper) {
+        var results = [];
+        var all = root.getElementsByTagName("*");
+        for (var i = 0; i < all.length; i++) {
+          if (getTag(all[i]) === tagUpper) results.push(all[i]);
+        }
+        return results;
+      }
+
+      /* Find the repeating row element */
+      function findRowTag(root) {
+        var counts = {}; // tag -> {max, depth}
+        function scan(node, depth) {
+          var info = childGroups(node);
+          for (var i = 0; i < info.order.length; i++) {
+            var tag = info.order[i];
+            var cnt = info.groups[tag].length;
+            if (
+              !counts[tag] ||
+              cnt > counts[tag].max ||
+              (cnt === counts[tag].max && depth < counts[tag].depth)
+            ) {
+              counts[tag] = { max: cnt, depth: depth };
+            }
+            // recurse into children
+            for (var j = 0; j < info.groups[tag].length; j++) {
+              scan(info.groups[tag][j], depth + 1);
+            }
+          }
+        }
+        scan(root, 1);
+
+        var best = getTag(root),
+          bestCnt = 1,
+          bestDep = 0;
+        var tags = Object.keys(counts);
+        for (var i = 0; i < tags.length; i++) {
+          var c = counts[tags[i]];
+          if (c.max > bestCnt || (c.max === bestCnt && c.depth < bestDep)) {
+            bestCnt = c.max;
+            bestDep = c.depth;
+            best = tags[i];
+          }
+        }
+        return best;
+      }
+
+      /* Detect key-value patterns in repeating child groups */
+      function detectKVPatterns(sampleNode) {
+        var kvMap = {};
+        function detect(n) {
+          // <-- Parameter war "node", kollidierte mit nichts, aber der Aufruf unten nutzte "node"
+          var info = childGroups(n);
+          for (var i = 0; i < info.order.length; i++) {
+            var tag = info.order[i];
+            var sibs = info.groups[tag];
+            if (sibs.length >= 2) {
+              var firstInfo = childGroups(sibs[0]);
+              if (firstInfo.order.length >= 2) {
+                var kTag = firstInfo.order[0];
+                var vTag = firstInfo.order[1];
+                var keys = {};
+                var allHaveKey = true;
+                for (var si = 0; si < sibs.length; si++) {
+                  var kEls = findChildrenByTag(sibs[si], kTag);
+                  if (kEls.length === 0) {
+                    allHaveKey = false;
+                    break;
+                  }
+                  keys[kEls[0].textContent.trim()] = 1;
+                }
+                if (allHaveKey && Object.keys(keys).length > 1) {
+                  kvMap[tag] = { k: kTag, v: vTag };
+                }
+              }
+            }
+            if (sibs.length > 0) detect(sibs[0]); // Rekursion
+          }
+        }
+        detect(sampleNode); // <-- HIER war der Bug: es stand "detect(node)" statt "detect(sampleNode)"
+        return kvMap;
+      }
+
+      /* Find direct children with a specific tag */
+      function findChildrenByTag(node, tagUpper) {
+        var results = [];
+        for (var i = 0; i < node.childNodes.length; i++) {
+          var ch = node.childNodes[i];
+          if (ch.nodeType === 1 && getTag(ch) === tagUpper) results.push(ch);
+        }
+        return results;
+      }
+
+      /* Walk a node and extract all fields into a row object */
+      function walkNode(node, path, row, kvMap) {
+        // Attributes
+        if (node.attributes) {
+          for (var ai = 0; ai < node.attributes.length; ai++) {
+            var attr = node.attributes[ai];
+            var aName = attr.name || attr.nodeName || "";
+            // Skip namespace declarations
+            if (aName === "xmlns" || aName.indexOf("xmlns:") === 0) continue;
+            // Strip prefix from attribute name
+            var cleanName = aName;
+            var ci = cleanName.indexOf(":");
+            if (ci !== -1) cleanName = cleanName.substring(ci + 1);
+            row[path + "/@" + cleanName.toUpperCase()] = attr.value;
+          }
+        }
+
+        // Leaf node
+        if (isLeaf(node)) {
+          var text = node.textContent ? node.textContent.trim() : "";
+          row[path] = text;
           return;
         }
 
-        var gr = groupKids(node);
-        var tags = Object.keys(gr);
-        for (var ti = 0; ti < tags.length; ti++) {
-          var ctag = tags[ti],
-            sibs = gr[ctag];
+        // Process children
+        var info = childGroups(node);
+        for (var i = 0; i < info.order.length; i++) {
+          var ctag = info.order[i];
+          var sibs = info.groups[ctag];
+
           if (sibs.length >= 2 && kvMap[ctag]) {
-            /* KV pivot */
+            // KV pivot pattern
             var kv = kvMap[ctag];
             for (var si = 0; si < sibs.length; si++) {
               var sib = sibs[si];
-              var kEls = nsFind(sib, kv.k),
-                vEls = nsFind(sib, kv.v);
-              if (!kEls.length) continue;
-              var kn = kEls[0].textContent
+              var kEls = findChildrenByTag(sib, kv.k);
+              var vEls = findChildrenByTag(sib, kv.v);
+              if (kEls.length === 0) continue;
+              var keyName = kEls[0].textContent
                 .trim()
                 .replace(/[\/\\?*\[\]:]/g, "_");
-              var col = path + "/" + ctag + "[" + kn + "]";
+              var col = path + "/" + ctag + "[" + keyName + "]";
               row[col] = vEls.length ? vEls[0].textContent.trim() : "";
-              /* any extra fields inside this KV element */
-              for (var sci = 0; sci < sib.children.length; sci++) {
-                var sc = sib.children[sci];
-                if (tagUC(sc) !== kv.k && tagUC(sc) !== kv.v)
-                  walkNodeAt(sc, col + "/" + tagUC(sc), row, kvMap);
+              // Extra fields inside this KV element
+              for (var sci = 0; sci < sib.childNodes.length; sci++) {
+                var sc = sib.childNodes[sci];
+                if (sc.nodeType !== 1) continue;
+                var scTag = getTag(sc);
+                if (scTag !== kv.k && scTag !== kv.v) {
+                  walkNode(sc, col + "/" + scTag, row, kvMap);
+                }
               }
             }
           } else if (sibs.length >= 2) {
-            /* Indexed repeating elements */
-            for (var ri2 = 0; ri2 < sibs.length; ri2++)
-              walkNodeAt(
-                sibs[ri2],
-                path + "/" + ctag + "[" + (ri2 + 1) + "]",
+            // Indexed repeating elements
+            for (var ri = 0; ri < sibs.length; ri++) {
+              walkNode(
+                sibs[ri],
+                path + "/" + ctag + "[" + (ri + 1) + "]",
                 row,
                 kvMap,
               );
+            }
           } else {
-            walkNodeAt(sibs[0], path + "/" + ctag, row, kvMap);
+            // Single child
+            walkNode(sibs[0], path + "/" + ctag, row, kvMap);
           }
         }
       }
@@ -761,137 +884,162 @@
           "&amp;",
         );
 
-        /* Parse — try strict XML first (required for xmlns= namespaced documents) */
         var root = null,
           errMsg = "";
+
+        // Try strict XML parsing first
         try {
-          var doc = new DOMParser().parseFromString(text, "text/xml");
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(text, "text/xml");
           var pe = doc.querySelector("parsererror");
-          if (pe) errMsg = pe.textContent.slice(0, 120);
-          else root = doc.documentElement;
+          if (pe) {
+            errMsg = pe.textContent.substring(0, 120);
+          } else {
+            root = doc.documentElement;
+          }
         } catch (e) {
           errMsg = String(e);
         }
 
-        /* Fallback: innerHTML repair for broken XML */
+        // Fallback: try as HTML
         if (!root) {
           try {
-            var div = document.createElement("div");
-            div.innerHTML = text
-              .replace(/<\?xml[^?]*\?>/gi, "")
-              .replace(/<!DOCTYPE[^>]*>/gi, "")
-              .trim();
-            if (div.children.length) root = div.children[0];
+            var parser2 = new DOMParser();
+            var doc2 = parser2.parseFromString(text, "text/html");
+            var body = doc2.body;
+            if (body && body.children.length > 0) {
+              // Find the first real element (skip script, style, etc.)
+              for (var fi = 0; fi < body.children.length; fi++) {
+                var cand = body.children[fi];
+                var tn = (cand.tagName || "").toLowerCase();
+                if (tn !== "script" && tn !== "style" && tn !== "link") {
+                  root = cand;
+                  break;
+                }
+              }
+            }
           } catch (e) {}
         }
 
         if (!root) {
           hidePg();
-          showToast("XML Fehler: " + errMsg, true);
+          showToast(
+            "XML Fehler: " + (errMsg || "Konnte nicht geparst werden"),
+            true,
+          );
           return;
+        }
+
+        // Skip wrapper elements with single child (like html > body > root)
+        var safety = 0;
+        while (root.children.length === 1 && safety < 5) {
+          var onlyChild = root.children[0];
+          var onlyTag = (onlyChild.tagName || "").toLowerCase();
+          if (onlyTag === "head" || onlyTag === "body") {
+            // It's an HTML wrapper, go into body
+            var bodyEl = root.querySelector("body");
+            if (bodyEl && bodyEl.children.length > 0) {
+              root = bodyEl.children[0];
+              break;
+            }
+          }
+          // Don't unwrap if the single child itself has siblings at the next level
+          break;
         }
 
         setPg(25, "Erkunde Struktur…");
 
-        /* Find row anchor: tag with highest direct-child repeat, shallowest depth wins ties */
-        var repInfo = {};
-        function scanRep(node, depth) {
-          var gr = groupKids(node);
-          var ts = Object.keys(gr);
-          for (var i = 0; i < ts.length; i++) {
-            var t = ts[i],
-              cnt = gr[t].length;
-            if (!repInfo[t]) repInfo[t] = { cnt: cnt, depth: depth + 1 };
-            else if (cnt > repInfo[t].cnt)
-              repInfo[t] = { cnt: cnt, depth: depth + 1 };
-            else if (cnt === repInfo[t].cnt && depth + 1 < repInfo[t].depth)
-              repInfo[t].depth = depth + 1;
-            for (var j = 0; j < gr[t].length; j++) scanRep(gr[t][j], depth + 1);
-          }
-        }
-        scanRep(root, 0);
+        // Find the repeating row tag
+        var rowTag = findRowTag(root);
+        var rowEls = findAll(root, rowTag);
 
-        var rowTag = tagUC(root),
-          bestCnt = 0,
-          bestDep = 999;
-        var rkeys = Object.keys(repInfo);
-        for (var ri = 0; ri < rkeys.length; ri++) {
-          var inf = repInfo[rkeys[ri]];
-          if (
-            inf.cnt > bestCnt ||
-            (inf.cnt === bestCnt && inf.depth < bestDep)
-          ) {
-            bestCnt = inf.cnt;
-            bestDep = inf.depth;
-            rowTag = rkeys[ri];
+        // If root itself is the "rowTag" and there are no descendants with that tag, treat root's children
+        if (
+          rowEls.length === 0 ||
+          (rowEls.length === 1 && rowEls[0] === root)
+        ) {
+          // Maybe each direct child of root is a row
+          var kids = [];
+          for (var ki = 0; ki < root.children.length; ki++) {
+            kids.push(root.children[ki]);
+          }
+          if (kids.length > 0) {
+            rowEls = kids;
+            rowTag = getTag(kids[0]);
           }
         }
-        var rowEls = nsFind(root, rowTag);
+
+        if (rowEls.length === 0) {
+          hidePg();
+          showToast("Keine Datensätze gefunden", true);
+          return;
+        }
+
         setPg(40, rowEls.length + " Datensätze…");
 
-        /* Detect KV patterns */
+        // Detect KV patterns from first row element
         var kvMap = {};
-        function detectKV(node) {
-          var gr = groupKids(node);
-          var ts = Object.keys(gr);
-          for (var i = 0; i < ts.length; i++) {
-            var t = ts[i],
-              sibs = gr[t];
-            if (sibs.length >= 2 && sibs[0].children.length >= 2) {
-              var kTag = tagUC(sibs[0].children[0]);
-              var vTag = tagUC(sibs[0].children[1]);
-              var keys = {};
-              for (var si = 0; si < sibs.length; si++) {
-                var kEls = nsFind(sibs[si], kTag);
-                if (kEls.length) keys[kEls[0].textContent.trim()] = 1;
-              }
-              if (Object.keys(keys).length > 1) kvMap[t] = { k: kTag, v: vTag };
-            }
-            detectKV(sibs[0]);
-          }
+        if (rowEls.length > 0) {
+          kvMap = detectKVPatterns(rowEls[0]);
         }
-        if (rowEls.length) detectKV(rowEls[0]);
 
         setPg(55, "Extrahiere Felder…");
 
-        /* Extract rows */
+        // Extract all rows
         var newRows = [];
         for (var i = 0; i < rowEls.length; i++) {
           var row = {};
-          walkNodeAt(rowEls[i], rowTag, row, kvMap);
+          walkNode(rowEls[i], rowTag, row, kvMap);
           newRows.push(row);
+          // Progress update every 500 rows
+          if (i % 500 === 0 && i > 0) {
+            setPg(
+              55 + Math.floor((i / rowEls.length) * 25),
+              "Verarbeite " + i + "/" + rowEls.length + "…",
+            );
+          }
         }
 
         setPg(82, "Baue Feldliste…");
 
-        /* Build field list in document order */
-        var cmap = {},
-          omap = {},
-          oi = 0;
+        // Build field list preserving document order
+        var fieldOrder = {};
+        var fieldCount = {};
+        var orderIdx = 0;
+
         for (var ri2 = 0; ri2 < newRows.length; ri2++) {
-          var ks = Object.keys(newRows[ri2]);
-          for (var ki = 0; ki < ks.length; ki++) {
-            var k = ks[ki];
-            if (omap[k] === undefined) omap[k] = oi++;
-            if (newRows[ri2][k] !== "") cmap[k] = (cmap[k] || 0) + 1;
-            else if (cmap[k] === undefined) cmap[k] = 0;
+          var keys = Object.keys(newRows[ri2]);
+          for (var ki2 = 0; ki2 < keys.length; ki2++) {
+            var k = keys[ki2];
+            if (fieldOrder[k] === undefined) {
+              fieldOrder[k] = orderIdx++;
+            }
+            var val = newRows[ri2][k];
+            if (val !== undefined && val !== "") {
+              fieldCount[k] = (fieldCount[k] || 0) + 1;
+            } else {
+              if (fieldCount[k] === undefined) fieldCount[k] = 0;
+            }
           }
         }
-        gFields = Object.keys(cmap)
-          .sort(function (a, b) {
-            return (omap[a] || 0) - (omap[b] || 0);
-          })
-          .map(function (path) {
-            var pts = path.split("/"),
-              lf = pts[pts.length - 1],
-              isA = lf.charAt(0) === "@";
-            return {
-              path: path,
-              leaf: isA ? lf.slice(1) : lf,
-              isAttr: isA,
-              count: cmap[path],
-            };
-          });
+
+        var allPaths = Object.keys(fieldOrder);
+        allPaths.sort(function (a, b) {
+          return fieldOrder[a] - fieldOrder[b];
+        });
+
+        gFields = allPaths.map(function (path) {
+          var parts = path.split("/");
+          var lastPart = parts[parts.length - 1];
+          var isAttr = lastPart.charAt(0) === "@";
+          return {
+            path: path,
+            leaf: isAttr ? lastPart.slice(1) : lastPart,
+            isAttr: isAttr,
+            count: fieldCount[path] || 0,
+          };
+        });
+
         gRows = newRows;
         gSelected = new Set();
 
@@ -1107,7 +1255,7 @@
         }
         ws["!cols"] = labels.map(function (lbl, ci) {
           var mx = lbl.length;
-          for (var ri = 0; ri < gRows.length; ri++) {
+          for (var ri = 0; ri < Math.min(gRows.length, 100); ri++) {
             var v = gRows[ri][cols[ci]];
             if (v && v.length > mx) mx = v.length;
           }
