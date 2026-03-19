@@ -1,514 +1,593 @@
 <!doctype html>
 <html lang="de">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>XML → Excel Extractor</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-      @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap");
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      :root {
-        --bg: #f5f5f3;
-        --surf: #fff;
-        --surf2: #f0f0ee;
-        --brd: #ddddd9;
-        --brdhi: #c0c0bc;
-        --blue: #2563eb;
-        --txt: #1a1a1a;
-        --muted: #8a8a85;
-        --red: #dc2626;
-        --mono: "IBM Plex Mono", monospace;
-        --sans: "IBM Plex Sans", sans-serif;
-      }
-      body {
-        background: var(--bg);
-        color: var(--txt);
-        font-family: var(--sans);
-        font-size: 14px;
-        height: 100vh;
-        overflow: hidden;
-        display: grid;
-        grid-template-rows: 57px 1fr 41px;
-      }
-      header {
-        border-bottom: 1px solid var(--brd);
-        padding: 0 32px;
-        display: flex;
-        align-items: center;
-        background: var(--surf);
-      }
-      .logo {
-        font-family: var(--mono);
-        font-weight: 600;
-        font-size: 13px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      .logo em {
-        color: var(--muted);
-        font-style: normal;
-      }
-      .sub {
-        color: var(--muted);
-        font-size: 12px;
-        font-family: var(--mono);
-        margin-left: 16px;
-      }
-      main {
-        display: grid;
-        grid-template-columns: 380px 1fr;
-        overflow: hidden;
-      }
-      .lp {
-        border-right: 1px solid var(--brd);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      .sec {
-        border-bottom: 1px solid var(--brd);
-        padding: 18px 20px;
-        flex-shrink: 0;
-      }
-      .sec.grow {
-        flex: 1;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        border-bottom: none;
-      }
-      .lbl {
-        font-family: var(--mono);
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        color: var(--muted);
-        margin-bottom: 10px;
-      }
-      .dz {
-        border: 1px dashed var(--brdhi);
-        background: var(--surf2);
-        border-radius: 4px;
-        padding: 22px 16px;
-        text-align: center;
-        cursor: pointer;
-        position: relative;
-        transition:
-          border-color 0.15s,
-          background 0.15s;
-      }
-      .dz:hover,
-      .dz.over {
-        border-color: var(--blue);
-        background: rgba(37, 99, 235, 0.03);
-      }
-      .dz input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-        width: 100%;
-        height: 100%;
-      }
-      .dz-icon {
-        font-size: 24px;
-      }
-      .dz-txt {
-        color: var(--muted);
-        font-size: 12px;
-        margin-top: 6px;
-        line-height: 1.5;
-      }
-      .dz-txt strong {
-        display: block;
-        color: var(--txt);
-        font-size: 13px;
-      }
-      .fbar {
-        display: none;
-        align-items: center;
-        gap: 10px;
-        background: var(--surf2);
-        border: 1px solid var(--brd);
-        border-radius: 4px;
-        padding: 10px 14px;
-        font-family: var(--mono);
-        font-size: 11px;
-        margin-top: 10px;
-      }
-      .fbar.show {
-        display: flex;
-      }
-      .fdot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--blue);
-        flex-shrink: 0;
-      }
-      .fname {
-        color: var(--blue);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        flex: 1;
-      }
-      .fsize {
-        color: var(--muted);
-        flex-shrink: 0;
-      }
-      .pgwrap {
-        display: none;
-        margin-top: 10px;
-      }
-      .pgwrap.show {
-        display: block;
-      }
-      .pgtrack {
-        height: 2px;
-        background: var(--brd);
-        border-radius: 1px;
-        overflow: hidden;
-      }
-      .pgfill {
-        height: 100%;
-        background: var(--blue);
-        width: 0;
-        transition: width 0.2s;
-      }
-      .pglbl {
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--muted);
-        margin-top: 5px;
-      }
-      .tctrl {
-        display: flex;
-        gap: 5px;
-        flex-shrink: 0;
-        margin-bottom: 8px;
-      }
-      .tbtn {
-        background: var(--surf2);
-        border: 1px solid var(--brd);
-        color: var(--muted);
-        font-family: var(--mono);
-        font-size: 10px;
-        padding: 4px 10px;
-        border-radius: 3px;
-        cursor: pointer;
-        transition: all 0.1s;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-      .tbtn:hover {
-        color: var(--txt);
-        border-color: var(--brdhi);
-      }
-      .tbtn.on {
-        color: var(--blue);
-        border-color: var(--blue);
-        background: rgba(37, 99, 235, 0.06);
-      }
-      .sinp {
-        width: 100%;
-        background: var(--surf2);
-        border: 1px solid var(--brd);
-        color: var(--txt);
-        font-family: var(--mono);
-        font-size: 11px;
-        padding: 7px 10px;
-        border-radius: 3px;
-        outline: none;
-        margin-bottom: 8px;
-        flex-shrink: 0;
-        transition: border-color 0.15s;
-      }
-      .sinp:focus {
-        border-color: var(--blue);
-      }
-      .sinp::placeholder {
-        color: var(--muted);
-      }
-      .fscroll {
-        flex: 1;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: var(--brd) transparent;
-      }
-      .empty-msg {
-        color: var(--muted);
-        font-size: 12px;
-        text-align: center;
-        padding: 32px 16px;
-        line-height: 1.8;
-        font-family: var(--mono);
-      }
-      .fi {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 5px 8px;
-        border-radius: 3px;
-        cursor: pointer;
-        transition: background 0.08s;
-        user-select: none;
-      }
-      .fi:hover {
-        background: var(--surf2);
-      }
-      .fi.sel {
-        background: rgba(37, 99, 235, 0.06);
-      }
-      .fck {
-        width: 14px;
-        height: 14px;
-        border: 1px solid var(--brdhi);
-        border-radius: 2px;
-        flex-shrink: 0;
-        position: relative;
-        transition: all 0.1s;
-      }
-      .fi.sel .fck {
-        background: var(--blue);
-        border-color: var(--blue);
-      }
-      .fi.sel .fck::after {
-        content: "";
-        position: absolute;
-        left: 3px;
-        top: 1px;
-        width: 6px;
-        height: 9px;
-        border: 1.5px solid #fff;
-        border-top: none;
-        border-left: none;
-        transform: rotate(45deg);
-      }
-      .fp {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--muted);
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .fp .lf {
-        color: var(--txt);
-      }
-      .fp .lf.at {
-        color: var(--blue);
-      }
-      .fc {
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--brdhi);
-        flex-shrink: 0;
-      }
-      .rp {
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      .rh {
-        border-bottom: 1px solid var(--brd);
-        padding: 0 24px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: var(--surf);
-        flex-shrink: 0;
-      }
-      .rtitle {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-      }
-      .rstats {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--muted);
-      }
-      .rstats b {
-        color: var(--blue);
-        font-weight: normal;
-      }
-      .twrap {
-        flex: 1;
-        overflow: auto;
-        scrollbar-width: thin;
-        scrollbar-color: var(--brd) transparent;
-      }
-      .pempty {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: var(--muted);
-        font-family: var(--mono);
-        font-size: 12px;
-        gap: 12px;
-      }
-      .pempty .icon {
-        font-size: 36px;
-        opacity: 0.25;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-family: var(--mono);
-        font-size: 11px;
-      }
-      thead th {
-        position: sticky;
-        top: 0;
-        background: var(--surf);
-        border-bottom: 1px solid var(--brdhi);
-        padding: 9px 14px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--txt);
-        white-space: nowrap;
-        z-index: 10;
-      }
-      .thx {
-        display: inline-block;
-        margin-left: 8px;
-        color: var(--muted);
-        cursor: pointer;
-        font-size: 10px;
-        font-weight: normal;
-      }
-      .thx:hover {
-        color: var(--red);
-      }
-      tbody tr {
-        border-bottom: 1px solid var(--brd);
-      }
-      tbody tr:hover {
-        background: var(--surf2);
-      }
-      tbody td {
-        padding: 7px 14px;
-        max-width: 220px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      tbody td.nil {
-        color: var(--brdhi);
-      }
-      footer {
-        border-top: 1px solid var(--brd);
-        padding: 0 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: var(--surf);
-        flex-shrink: 0;
-      }
-      .finfo {
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--muted);
-      }
-      .finfo b {
-        color: var(--blue);
-        font-weight: normal;
-      }
-      .ebtn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--txt);
-        color: #fff;
-        border: none;
-        font-family: var(--mono);
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 8px 20px;
-        border-radius: 3px;
-        cursor: pointer;
-        transition:
-          background 0.15s,
-          transform 0.1s;
-      }
-      .ebtn:hover {
-        background: #333;
-        transform: translateY(-1px);
-      }
-      .ebtn:active {
-        transform: none;
-      }
-      .ebtn:disabled {
-        background: var(--brd);
-        color: var(--muted);
-        cursor: not-allowed;
-        transform: none;
-      }
-      .toast {
-        position: fixed;
-        bottom: 56px;
-        right: 24px;
-        background: var(--surf);
-        border: 1px solid var(--brd);
-        border-left: 3px solid var(--blue);
-        border-radius: 4px;
-        padding: 11px 16px;
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--txt);
-        z-index: 999;
-        max-width: 320px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-        transform: translateX(140%);
-        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      .toast.show {
-        transform: translateX(0);
-      }
-      .toast.err {
-        border-left-color: var(--red);
-      }
-      ::-webkit-scrollbar {
-        width: 5px;
-        height: 5px;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--brd);
-        border-radius: 3px;
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <div class="logo">XML<em> → </em>XLS<em> // </em>Extractor</div>
-      <div class="sub">Generic field extractor · any depth · any schema</div>
-    </header>
-    <main>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XML ⇄ Excel · Converter</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;800&display=swap");
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+
+    :root {
+      --bg: #f4f4f0;
+      --surf: #ffffff;
+      --surf2: #f0f0ec;
+      --surf3: #e8e8e2;
+      --brd: #dcdcd6;
+      --brdhi: #c0c0b8;
+      --blue: #1d56d8;
+      --blue-dim: rgba(29,86,216,.08);
+      --green: #0f7a4a;
+      --green-dim: rgba(15,122,74,.08);
+      --amber: #b45309;
+      --amber-dim: rgba(180,83,9,.08);
+      --red: #c41a1a;
+      --purple: #6d28d9;
+      --txt: #1a1a1a;
+      --muted: #6b6b80;
+      --muted2: #9898a8;
+      --mono: "JetBrains Mono", monospace;
+      --display: "Syne", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: 13px;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 52px 1fr 40px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      border-bottom: 1px solid var(--brd);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: var(--surf);
+    }
+    .logo {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: -.01em;
+      color: var(--txt);
+    }
+    .logo em { color: var(--blue); font-style: normal }
+    .logo span { color: var(--muted); font-weight: 400 }
+    .mode-tabs {
+      display: flex;
+      gap: 2px;
+      margin-left: auto;
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 2px;
+      border: 1px solid var(--brd);
+    }
+    .mode-tab {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      padding: 5px 14px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .mode-tab:hover { color: var(--txt) }
+    .mode-tab.on { background: var(--surf2); color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,.4) }
+    .mode-tab.on.green { color: var(--green) }
+    .mode-tab.on.amber { color: var(--amber) }
+
+    /* ── MAIN PANELS ── */
+    main { overflow: hidden }
+    .panel { display: none; height: 100%; overflow: hidden }
+    .panel.active { display: grid }
+    #panelX2E { grid-template-columns: 380px 1fr }
+    #panelE2X { grid-template-columns: 380px 1fr }
+    #panelDash { grid-template-columns: 300px 1fr }
+
+    /* ── LEFT PANEL ── */
+    .lp {
+      border-right: 1px solid var(--brd);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--surf);
+    }
+    .sec {
+      border-bottom: 1px solid var(--brd);
+      padding: 16px;
+      flex-shrink: 0;
+    }
+    .sec.grow {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-bottom: none;
+    }
+    .lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* ── DROPZONE ── */
+    .dz {
+      border: 1px dashed var(--brdhi);
+      background: var(--surf2);
+      border-radius: 6px;
+      padding: 20px 14px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: border-color .15s, background .15s;
+    }
+    .dz:hover, .dz.over { border-color: var(--blue); background: var(--blue-dim) }
+    .dz.green:hover, .dz.green.over { border-color: var(--green); background: var(--green-dim) }
+    .dz input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100% }
+    .dz-icon { font-size: 20px; margin-bottom: 6px }
+    .dz-txt { color: var(--muted); font-size: 11px; line-height: 1.5 }
+    .dz-txt strong { display: block; color: var(--txt); font-size: 12px; margin-bottom: 2px }
+    .fbar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: var(--surf2);
+      border: 1px solid var(--brd);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 11px;
+      margin-top: 8px;
+    }
+    .fbar.show { display: flex }
+    .fdot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex-shrink: 0 }
+    .fdot.green { background: var(--green) }
+    .fname { color: var(--blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 }
+    .fname.green { color: var(--green) }
+    .fsize { color: var(--muted); flex-shrink: 0 }
+    .pgwrap { display: none; margin-top: 8px }
+    .pgwrap.show { display: block }
+    .pgtrack { height: 2px; background: var(--brd); border-radius: 1px; overflow: hidden }
+    .pgfill { height: 100%; background: var(--blue); width: 0; transition: width .2s }
+    .pgfill.green { background: var(--green) }
+    .pglbl { font-size: 9px; color: var(--muted); margin-top: 4px }
+
+    /* ── CONTROLS ── */
+    .tctrl { display: flex; gap: 4px; flex-shrink: 0; margin-bottom: 8px; flex-wrap: wrap }
+    .tbtn {
+      background: var(--surf2);
+      border: 1px solid var(--brd);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 4px 9px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all .1s;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .tbtn:hover { color: var(--txt); border-color: var(--brdhi) }
+    .tbtn.on { color: var(--blue); border-color: var(--blue); background: var(--blue-dim) }
+    .sinp {
+      width: 100%;
+      background: var(--surf2);
+      border: 1px solid var(--brd);
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 3px;
+      outline: none;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+      transition: border-color .15s;
+    }
+    .sinp:focus { border-color: var(--blue) }
+    .sinp::placeholder { color: var(--muted2) }
+    .fscroll { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--brd) transparent }
+
+    /* ── TREE ── */
+    .tree-group { margin-bottom: 1px }
+    .tree-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      transition: background .08s;
+    }
+    .tree-header:hover { background: var(--surf2) }
+    .tree-toggle {
+      width: 12px; height: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 7px; color: var(--muted2);
+      transition: transform .15s; flex-shrink: 0;
+    }
+    .tree-toggle.open { transform: rotate(90deg) }
+    .tree-tag { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+    .tree-cnt {
+      font-size: 9px; color: var(--muted2);
+      background: var(--surf3); padding: 1px 5px; border-radius: 8px; flex-shrink: 0;
+    }
+    .tree-cnt.has-sel { color: var(--blue); border: 1px solid var(--blue); background: var(--blue-dim) }
+    .tree-children.collapsed { max-height: 0 !important; overflow: hidden }
+    .tree-indent { border-left: 1px solid var(--brd); margin-left: 13px }
+    .fi {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 8px 5px 12px; border-radius: 3px;
+      cursor: pointer; transition: background .08s; user-select: none;
+    }
+    .fi:hover { background: var(--surf2) }
+    .fi.sel { background: var(--blue-dim) }
+    .fck {
+      width: 13px; height: 13px; border: 1px solid var(--brdhi); border-radius: 2px;
+      flex-shrink: 0; position: relative; transition: all .1s;
+    }
+    .fi.sel .fck { background: var(--blue); border-color: var(--blue) }
+    .fi.sel .fck::after {
+      content: ""; position: absolute; left: 3px; top: 1px; width: 5px; height: 8px;
+      border: 1.5px solid #fff; border-top: none; border-left: none; transform: rotate(45deg);
+    }
+    .fp { font-size: 11px; color: var(--txt); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+    .fp .at { color: var(--purple) }
+    .fc { font-size: 9px; color: var(--muted2); flex-shrink: 0 }
+    .empty-msg { color: var(--muted); font-size: 11px; text-align: center; padding: 28px 14px; line-height: 1.8 }
+
+    /* ── RIGHT PANEL ── */
+    .rp { display: flex; flex-direction: column; overflow: hidden; background: var(--bg) }
+    .rh {
+      border-bottom: 1px solid var(--brd);
+      padding: 0 20px; height: 44px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surf); flex-shrink: 0;
+    }
+    .rtitle { font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted) }
+    .rstats { font-size: 11px; color: var(--muted) }
+    .rstats b { color: var(--blue); font-weight: normal }
+    .twrap { flex: 1; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--brd) transparent }
+    .pempty {
+      height: 100%; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--muted); font-size: 11px; gap: 10px;
+    }
+    .pempty .icon { font-size: 32px; opacity: .2 }
+
+    /* ── TABLE ── */
+    table { width: 100%; border-collapse: collapse; font-size: 11px }
+    thead th {
+      position: sticky; top: 0; background: var(--surf);
+      border-bottom: 1px solid var(--brdhi);
+      padding: 8px 12px; text-align: left; font-weight: 600;
+      color: var(--txt); white-space: nowrap; z-index: 10;
+    }
+    .thx {
+      display: inline-block; margin-left: 6px; color: var(--muted);
+      cursor: pointer; font-size: 9px; font-weight: normal;
+    }
+    .thx:hover { color: var(--red) }
+    tbody tr { border-bottom: 1px solid var(--brd) }
+    tbody tr:hover { background: var(--surf2) }
+    tbody td { padding: 6px 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+    tbody td.nil { color: var(--muted2) }
+
+    /* ── HIERARCHY VIEW ── */
+    .hier-wrap { padding: 16px; }
+    .hier-schema {
+      background: var(--surf);
+      border: 1px solid var(--brd);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .hier-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-bottom: 1px solid var(--brd);
+      transition: background .08s;
+    }
+    .hier-row:last-child { border-bottom: none }
+    .hier-row:hover { background: var(--surf2) }
+    .hier-indent { display: flex; align-items: stretch; flex-shrink: 0 }
+    .hier-line { width: 18px; border-right: 1px solid var(--brd); flex-shrink: 0 }
+    .hier-line.last-child-line { border-right: none }
+    .hier-content { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; flex: 1; min-width: 0 }
+    .hier-tag-el {
+      font-size: 11px; color: var(--blue); font-weight: 600;
+      background: var(--blue-dim); padding: 1px 6px; border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .hier-tag-attr {
+      font-size: 11px; color: var(--purple); font-weight: 600;
+      background: rgba(167,139,250,.1); padding: 1px 6px; border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .hier-tag-text {
+      font-size: 10px; color: var(--green);
+      background: var(--green-dim); padding: 1px 6px; border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .hier-count { font-size: 10px; color: var(--muted); flex-shrink: 0 }
+    .hier-sample {
+      font-size: 10px; color: var(--muted2);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+    }
+    .hier-stats-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .hier-stat {
+      background: var(--surf);
+      border: 1px solid var(--brd);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+    .hier-stat-val {
+      font-family: var(--display);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--blue);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .hier-stat-val.green { color: var(--green) }
+    .hier-stat-val.amber { color: var(--amber) }
+    .hier-stat-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em }
+
+    /* ── DASHBOARD ── */
+    .dash-lp {
+      border-right: 1px solid var(--brd);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--surf);
+    }
+    .dash-widgets { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px }
+    .dash-widget-item {
+      background: var(--surf2);
+      border: 1px solid var(--brd);
+      border-radius: 5px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all .12s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dash-widget-item:hover { border-color: var(--brdhi); background: var(--surf3) }
+    .dash-widget-item.active { border-color: var(--amber); background: var(--amber-dim) }
+    .wicon { font-size: 18px; flex-shrink: 0; width: 32px; text-align: center }
+    .winfo-name { font-size: 11px; color: var(--txt); font-weight: 600; margin-bottom: 2px }
+    .winfo-desc { font-size: 10px; color: var(--muted) }
+    .dash-drop-area {
+      margin: 12px;
+      border: 1px dashed var(--brdhi);
+      border-radius: 5px;
+      padding: 12px;
+      background: var(--surf2);
+    }
+    .dash-drop-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px }
+    .dash-cfg-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px }
+    .dash-cfg-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; min-width: 70px }
+    .dash-cfg-sel {
+      flex: 1; background: var(--bg); border: 1px solid var(--brd);
+      color: var(--txt); font-family: var(--mono); font-size: 11px;
+      padding: 5px 8px; border-radius: 3px; outline: none; cursor: pointer;
+    }
+    .add-widget-btn {
+      width: 100%;
+      background: var(--amber-dim);
+      border: 1px solid var(--amber);
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 7px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background .12s;
+    }
+    .add-widget-btn:hover { background: var(--amber); color: #000 }
+    .add-widget-btn:disabled { background: transparent; border-color: var(--brd); color: var(--muted); cursor: not-allowed }
+    .dash-canvas {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--bg);
+    }
+    .dash-canvas-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 11px;
+      gap: 10px;
+    }
+    .dash-canvas-empty .icon { font-size: 32px; opacity: .2 }
+    .dash-card {
+      background: var(--surf);
+      border: 1px solid var(--brd);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .dash-card-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--brd);
+      background: var(--surf2);
+    }
+    .dash-card-title { font-size: 11px; color: var(--txt); font-weight: 600 }
+    .dash-card-sub { font-size: 10px; color: var(--muted) }
+    .dash-card-del {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 11px; padding: 2px 6px; border-radius: 2px;
+    }
+    .dash-card-del:hover { color: var(--red); background: rgba(240,68,68,.1) }
+    .dash-card-body { padding: 12px 14px }
+
+    /* Value distribution bar chart */
+    .bar-chart { display: flex; flex-direction: column; gap: 4px }
+    .bar-row { display: flex; align-items: center; gap: 8px }
+    .bar-lbl { font-size: 10px; color: var(--muted); min-width: 120px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; text-align: right; flex-shrink: 0 }
+    .bar-track { flex: 1; height: 14px; background: var(--surf3); border-radius: 2px; overflow: hidden }
+    .bar-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .4s cubic-bezier(.4,0,.2,1) }
+    .bar-cnt { font-size: 10px; color: var(--muted2); min-width: 36px; text-align: right }
+
+    /* Filled-ness gauge */
+    .fill-gauge { display: flex; align-items: center; gap: 12px }
+    .fill-gauge-arc { position: relative; width: 70px; height: 70px; flex-shrink: 0 }
+    .fill-gauge-arc svg { width: 70px; height: 70px }
+    .fill-gauge-pct {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--display); font-size: 14px; font-weight: 800; color: var(--txt);
+    }
+    .fill-gauge-info { flex: 1 }
+    .fill-gauge-name { font-size: 11px; color: var(--txt); margin-bottom: 4px }
+    .fill-gauge-sub { font-size: 10px; color: var(--muted) }
+
+    /* Stats card */
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px }
+    .stat-cell { background: var(--surf2); border-radius: 4px; padding: 10px 10px }
+    .stat-cell-val { font-family: var(--display); font-size: 18px; font-weight: 800; color: var(--blue); line-height: 1; margin-bottom: 4px }
+    .stat-cell-val.green { color: var(--green) }
+    .stat-cell-val.amber { color: var(--amber) }
+    .stat-cell-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em }
+
+    /* Unique values table */
+    .uv-table { width: 100%; border-collapse: collapse }
+    .uv-table td { padding: 5px 8px; border-bottom: 1px solid var(--brd); font-size: 11px }
+    .uv-table td:first-child { color: var(--txt) }
+    .uv-table td:last-child { color: var(--muted); text-align: right }
+    .uv-table tr:last-child td { border-bottom: none }
+
+    /* E2X config */
+    .cfg-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px }
+    .cfg-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; min-width: 80px; flex-shrink: 0 }
+    .cfg-inp {
+      flex: 1; background: var(--surf2); border: 1px solid var(--brd);
+      color: var(--txt); font-family: var(--mono); font-size: 11px;
+      padding: 5px 9px; border-radius: 3px; outline: none; transition: border-color .15s;
+    }
+    .cfg-inp:focus { border-color: var(--green) }
+    .cfg-inp::placeholder { color: var(--muted2) }
+    .cfg-sel {
+      flex: 1; background: var(--surf2); border: 1px solid var(--brd);
+      color: var(--txt); font-family: var(--mono); font-size: 11px;
+      padding: 5px 9px; border-radius: 3px; outline: none; cursor: pointer;
+    }
+    .cfg-hint { font-size: 10px; color: var(--muted2); margin-top: 2px; line-height: 1.5 }
+    .sheet-tabs { display: flex; gap: 2px; flex-wrap: wrap; margin-bottom: 8px }
+    .sheet-tab {
+      font-size: 9px; padding: 4px 9px; border: 1px solid var(--brd);
+      border-radius: 3px; cursor: pointer; background: var(--surf2); color: var(--muted);
+      transition: all .1s; letter-spacing: .06em; text-transform: uppercase;
+    }
+    .sheet-tab:hover { color: var(--txt); border-color: var(--brdhi) }
+    .sheet-tab.on { color: var(--green); border-color: var(--green); background: var(--green-dim) }
+    .xml-preview {
+      flex: 1; overflow: auto; background: var(--surf); border-radius: 4px;
+      font-size: 11px; line-height: 1.7; white-space: pre-wrap; word-break: break-all;
+      padding: 14px; color: var(--txt);
+    }
+    .xtag { color: var(--blue) }
+    .xattr { color: var(--purple) }
+    .xval { color: var(--green) }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--brd);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surf);
+      flex-shrink: 0;
+    }
+    .finfo { font-size: 10px; color: var(--muted) }
+    .finfo b { color: var(--blue); font-weight: normal }
+    .ebtn {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--blue); color: #fff; border: none;
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: 7px 18px; border-radius: 4px; cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    .ebtn:hover { background: #3a7be0; transform: translateY(-1px) }
+    .ebtn:active { transform: none }
+    .ebtn:disabled { background: var(--surf3); color: var(--muted); cursor: not-allowed; transform: none }
+    .ebtn.green:not(:disabled) { background: var(--green); color: #000 }
+    .ebtn.green:not(:disabled):hover { background: #32b87a }
+
+    .toast {
+      position: fixed; bottom: 52px; right: 20px;
+      background: var(--surf); border: 1px solid var(--brd);
+      border-left: 3px solid var(--blue);
+      border-radius: 5px; padding: 10px 14px;
+      font-size: 11px; color: var(--txt); z-index: 999; max-width: 300px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      transform: translateX(140%); transition: transform .25s cubic-bezier(.16,1,.3,1);
+    }
+    .toast.show { transform: translateX(0) }
+    .toast.err { border-left-color: var(--red) }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px }
+    ::-webkit-scrollbar-thumb { background: var(--brdhi); border-radius: 3px }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">XML <em>⇄</em> Excel <span>// Converter</span></div>
+    <div class="mode-tabs">
+      <button class="mode-tab on"    id="tabX2E"  onclick="switchMode('x2e')">XML → Excel</button>
+      <button class="mode-tab green" id="tabE2X"  onclick="switchMode('e2x')">Excel → XML</button>
+      <button class="mode-tab amber" id="tabDash" onclick="switchMode('dash')">⬡ Dashboard</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ═══════════════ XML → EXCEL ═══════════════ -->
+    <div class="panel active" id="panelX2E">
       <div class="lp">
         <div class="sec">
           <div class="lbl">01 / XML Datei</div>
           <div class="dz" id="dz">
             <input type="file" id="fi" accept=".xml,text/xml,application/xml" />
-            <div class="dz-icon">⬡</div>
-            <div class="dz-txt">
-              <strong>XML hochladen</strong>Drag &amp; Drop oder klicken
-            </div>
+            <div class="dz-icon">📂</div>
+            <div class="dz-txt"><strong>XML hochladen</strong>Drag &amp; Drop oder klicken</div>
           </div>
           <div class="fbar" id="fbar">
             <div class="fdot"></div>
@@ -517,32 +596,21 @@
           </div>
           <div class="pgwrap" id="pgwrap">
             <div class="pgtrack"><div class="pgfill" id="pgfill"></div></div>
-            <div class="pglbl" id="pglbl">Analysiere…</div>
+            <div class="pglbl" id="pglbl"></div>
           </div>
         </div>
         <div class="sec grow">
           <div class="lbl">02 / Felder auswählen</div>
           <div class="tctrl">
-            <button class="tbtn" id="btnAll" onclick="doAll()">Alle</button>
+            <button class="tbtn" id="btnAll"  onclick="doAll()">Alle</button>
             <button class="tbtn" id="btnNone" onclick="doNone()">Keine</button>
-            <button class="tbtn" id="btnFlat" onclick="doView('flat')">
-              Flat
-            </button>
-            <button class="tbtn" id="btnSort" onclick="doView('az')">
-              A–Z
-            </button>
+            <button class="tbtn" id="btnTree" onclick="doView('tree')">Baum</button>
+            <button class="tbtn" id="btnFlat" onclick="doView('flat')">Flat</button>
+            <button class="tbtn" id="btnSort" onclick="doView('az')">A–Z</button>
           </div>
-          <input
-            class="sinp"
-            id="sinp"
-            type="text"
-            placeholder="Felder filtern…"
-            oninput="doSearch(this.value)"
-          />
+          <input class="sinp" id="sinp" type="text" placeholder="Felder filtern…" oninput="doSearch(this.value)" />
           <div class="fscroll" id="flist">
-            <div class="empty-msg">
-              ← XML hochladen<br />um Felder zu erkunden
-            </div>
+            <div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>
           </div>
         </div>
       </div>
@@ -552,770 +620,827 @@
           <div class="rstats" id="rstats">—</div>
         </div>
         <div class="twrap" id="twrap">
-          <div class="pempty">
-            <div class="icon">⬡</div>
-            <div>Felder auswählen für Vorschau</div>
+          <div class="pempty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ EXCEL → XML ═══════════════ -->
+    <div class="panel" id="panelE2X">
+      <div class="lp">
+        <div class="sec">
+          <div class="lbl">01 / Excel Datei</div>
+          <div class="dz green" id="dz2">
+            <input type="file" id="fi2" accept=".xlsx,.xls,.csv" />
+            <div class="dz-icon">📊</div>
+            <div class="dz-txt"><strong>Excel / CSV hochladen</strong>Drag &amp; Drop oder klicken</div>
+          </div>
+          <div class="fbar" id="fbar2">
+            <div class="fdot green"></div>
+            <span class="fname green" id="fname2"></span>
+            <span class="fsize" id="fsize2"></span>
+          </div>
+          <div class="pgwrap" id="pgwrap2">
+            <div class="pgtrack"><div class="pgfill green" id="pgfill2"></div></div>
+            <div class="pglbl" id="pglbl2"></div>
+          </div>
+        </div>
+        <div class="sec" id="sheetSec" style="display:none">
+          <div class="lbl">Tabellenblatt</div>
+          <div class="sheet-tabs" id="sheetTabs"></div>
+        </div>
+        <div class="sec grow">
+          <div class="lbl">02 / XML Struktur</div>
+          <div class="fscroll">
+            <div style="margin-bottom:12px">
+              <div class="cfg-row"><span class="cfg-lbl">Root-Tag</span><input class="cfg-inp" id="cfgRoot" value="data" placeholder="data" oninput="e2xPreview()"/></div>
+              <div class="cfg-row"><span class="cfg-lbl">Zeilen-Tag</span><input class="cfg-inp" id="cfgRow" value="record" placeholder="record" oninput="e2xPreview()"/></div>
+              <div class="cfg-row"><span class="cfg-lbl">Encoding</span>
+                <select class="cfg-sel" id="cfgEnc" onchange="e2xPreview()">
+                  <option value="UTF-8" selected>UTF-8</option>
+                  <option value="ISO-8859-1">ISO-8859-1</option>
+                  <option value="UTF-16">UTF-16</option>
+                </select>
+              </div>
+              <div class="cfg-row"><span class="cfg-lbl">Modus</span>
+                <select class="cfg-sel" id="cfgMode" onchange="e2xPreview()">
+                  <option value="elements" selected>Spalten als Elemente</option>
+                  <option value="attributes">Spalten als Attribute</option>
+                  <option value="mixed">Gemischt (@ = Attribut)</option>
+                </select>
+              </div>
+              <div class="cfg-hint">Spalten mit @ am Anfang werden im Modus „Gemischt" als Attribute erzeugt.</div>
+            </div>
+            <div class="lbl">Spalten-Mapping</div>
+            <div class="cfg-hint" style="margin-bottom:8px">Spaltenname → XML-Tag (leer = überspringen)</div>
+            <div id="colMap"></div>
           </div>
         </div>
       </div>
-    </main>
-    <footer>
-      <div class="finfo" id="finfo">Kein Dokument geladen</div>
-      <button class="ebtn" id="ebtn" disabled onclick="doExport()">
-        ↓ Excel exportieren
-      </button>
-    </footer>
-    <div class="toast" id="toast"></div>
+      <div class="rp">
+        <div class="rh">
+          <div class="rtitle">XML Vorschau</div>
+          <div class="rstats" id="rstats2">—</div>
+        </div>
+        <div class="twrap" id="twrap2">
+          <div class="pempty"><div class="icon">⬡</div><div>Excel hochladen für XML-Vorschau</div></div>
+        </div>
+      </div>
+    </div>
 
-    <script>
-      /* STATE */
-      var gFields = [],
-        gSelected = new Set(),
-        gRows = [],
-        gView = "flat",
-        gQuery = "",
-        gFileName = "";
+    <!-- ═══════════════ DASHBOARD ═══════════════ -->
+    <div class="panel" id="panelDash">
+      <div class="dash-lp">
+        <div class="sec"><div class="lbl">Widget hinzufügen</div>
+          <div class="dash-widgets" id="dashWidgetMenu"></div>
+        </div>
+        <div class="dash-drop-area">
+          <div class="dash-drop-lbl">Konfiguration</div>
+          <div id="dashCfg"><div class="empty-msg" style="padding:10px 0">Widget auswählen ↑</div></div>
+          <button class="add-widget-btn" id="addWidgetBtn" disabled onclick="doAddWidget()">+ Widget hinzufügen</button>
+        </div>
+      </div>
+      <div class="rp">
+        <div class="rh">
+          <div class="rtitle">Dashboard Canvas</div>
+          <div class="rstats" id="rstatsDash">—</div>
+        </div>
+        <div class="dash-canvas" id="dashCanvas">
+          <div class="dash-canvas-empty"><div class="icon">⬡</div><div>Widgets hinzufügen und Daten visualisieren</div></div>
+        </div>
+      </div>
+    </div>
+  </main>
 
-      /* STORAGE */
-      var SKEY = "xmlex_v6";
-      function stateSave() {
-        try {
-          localStorage.setItem(
-            SKEY,
-            JSON.stringify({
-              fields: gFields,
-              selected: Array.from(gSelected),
-              rows: gRows,
-              view: gView,
-              fileName: gFileName,
-            }),
-          );
-        } catch (e) {}
-      }
-      function stateLoad() {
-        try {
-          var d = JSON.parse(localStorage.getItem(SKEY) || "null");
-          if (!d || !d.rows || !d.rows.length) return false;
-          gFields = d.fields || [];
-          gSelected = new Set(d.selected || []);
-          gRows = d.rows || [];
-          gView = d.view || "flat";
-          gFileName = d.fileName || "";
-          return true;
-        } catch (e) {
-          return false;
+  <footer>
+    <div class="finfo" id="finfo">Kein Dokument geladen</div>
+    <div style="display:flex;gap:8px">
+      <button class="ebtn" id="ebtn" disabled onclick="doExport()">↓ Excel exportieren</button>
+      <button class="ebtn green" id="ebtn2" disabled onclick="doExportXML()" style="display:none">↓ XML exportieren</button>
+    </div>
+  </footer>
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════
+   UTILS
+══════════════════════════════════════ */
+function $(id) { return document.getElementById(id) }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;') }
+function fmtB(n) { return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB' }
+function pathLabel(path) { var m=path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/); if(m) return m[2]?m[1]+' / '+m[2]:m[1]; return path.split('/').pop().replace('@','') }
+function setPg(wId,fId,lId,pct,lbl){ $(wId).classList.add('show'); $(fId).style.width=pct+'%'; $(lId).textContent=lbl }
+function hidePg(wId){ $(wId).classList.remove('show') }
+var _tt;
+function showToast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); clearTimeout(_tt); _tt=setTimeout(function(){t.classList.remove('show')},3200) }
+
+/* ══════════════════════════════════════
+   MODE SWITCH
+══════════════════════════════════════ */
+var gMode='x2e';
+function switchMode(m){
+  gMode=m;
+  ['x2e','e2x','dash'].forEach(function(k){
+    $('panel'+k.toUpperCase().replace('X2E','X2E').replace('E2X','E2X').replace('DASH','Dash')).className='panel'+(m===k?' active':'');
+  });
+  // fix panel IDs
+  $('panelX2E').className='panel'+(m==='x2e'?' active':'');
+  $('panelE2X').className='panel'+(m==='e2x'?' active':'');
+  $('panelDash').className='panel'+(m==='dash'?' active':'');
+  $('tabX2E').className='mode-tab'+(m==='x2e'?' on':'');
+  $('tabE2X').className='mode-tab green'+(m==='e2x'?' on':'');
+  $('tabDash').className='mode-tab amber'+(m==='dash'?' on':'');
+  $('ebtn').style.display=m==='x2e'?'flex':'none';
+  $('ebtn2').style.display=m==='e2x'?'flex':'none';
+  if(m==='x2e') setFooterX2E();
+  else if(m==='e2x') setFooterE2X();
+  else $('finfo').innerHTML='Dashboard-Modus';
+  if(m==='dash') initDashboard();
+}
+
+/* ══════════════════════════════════════
+   XML → EXCEL STATE
+══════════════════════════════════════ */
+var gFields=[], gSelected=new Set(), gRows=[], gView='tree', gQuery='', gFileName='';
+var gCollapsed=new Set();
+var SKEY='xmlconv_v9';
+
+function stateSave(){
+  try{ localStorage.setItem(SKEY,JSON.stringify({fields:gFields,selected:Array.from(gSelected),rows:gRows,view:gView,fileName:gFileName,collapsed:Array.from(gCollapsed)})) }catch(e){}
+}
+function stateLoad(){
+  try{
+    var d=JSON.parse(localStorage.getItem(SKEY)||'null');
+    if(!d||!d.rows||!d.rows.length) return false;
+    gFields=d.fields||[]; gSelected=new Set(d.selected||[]); gRows=d.rows||[];
+    gView=d.view||'tree'; gFileName=d.fileName||''; gCollapsed=new Set(d.collapsed||[]);
+    return true;
+  }catch(e){ return false }
+}
+
+if(stateLoad()){
+  $('fbar').classList.add('show'); $('fname').textContent=gFileName+'.xml';
+  $('fsize').textContent=gRows.length+' Datensätze (gecacht)';
+  $('ebtn').disabled=gSelected.size===0; setFooterX2E(); syncBtns(); renderList(); renderTable();
+  showToast('Stand wiederhergestellt ('+gRows.length+' Datensätze)');
+}
+
+/* ══════════════════════════════════════
+   FILE HANDLING — XML
+══════════════════════════════════════ */
+var dzEl=$('dz');
+$('fi').addEventListener('change',function(e){ if(e.target.files[0]) loadFileXML(e.target.files[0]) });
+dzEl.addEventListener('dragover',function(e){ e.preventDefault(); dzEl.classList.add('over') });
+dzEl.addEventListener('dragleave',function(){ dzEl.classList.remove('over') });
+dzEl.addEventListener('drop',function(e){ e.preventDefault(); dzEl.classList.remove('over'); if(e.dataTransfer.files[0]) loadFileXML(e.dataTransfer.files[0]) });
+
+function loadFileXML(file){
+  gFileName=file.name.replace(/\.xml$/i,'');
+  $('fbar').classList.add('show'); $('fname').textContent=file.name; $('fsize').textContent=fmtB(file.size);
+  setPg('pgwrap','pgfill','pglbl',0,'Lese Datei…');
+  var r=new FileReader();
+  r.onload=function(e){ try{ parseXML(e.target.result) }catch(err){ hidePg('pgwrap'); showToast('Fehler: '+err.message,true); console.error(err) } };
+  r.readAsText(file);
+}
+
+/* ══════════════════════════════════════
+   FILE HANDLING — EXCEL
+══════════════════════════════════════ */
+var eHeaders=[], eRows=[], eFileName='', eSheets=[], eActiveSheet=0, eWorkbook=null, eColMap={};
+var dzEl2=$('dz2');
+$('fi2').addEventListener('change',function(e){ if(e.target.files[0]) loadFileExcel(e.target.files[0]) });
+dzEl2.addEventListener('dragover',function(e){ e.preventDefault(); dzEl2.classList.add('over') });
+dzEl2.addEventListener('dragleave',function(){ dzEl2.classList.remove('over') });
+dzEl2.addEventListener('drop',function(e){ e.preventDefault(); dzEl2.classList.remove('over'); if(e.dataTransfer.files[0]) loadFileExcel(e.dataTransfer.files[0]) });
+
+function loadFileExcel(file){
+  eFileName=file.name.replace(/\.(xlsx|xls|csv)$/i,'');
+  $('fbar2').classList.add('show'); $('fname2').textContent=file.name; $('fsize2').textContent=fmtB(file.size);
+  setPg('pgwrap2','pgfill2','pglbl2',0,'Lese Datei…');
+  var r=new FileReader();
+  r.onload=function(ev){
+    try{
+      setPg('pgwrap2','pgfill2','pglbl2',30,'Parse Excel…');
+      eWorkbook=XLSX.read(ev.target.result,{type:'array'});
+      eSheets=eWorkbook.SheetNames;
+      eActiveSheet=0;
+      renderSheetTabs();
+      loadSheet(0);
+      setPg('pgwrap2','pgfill2','pglbl2',100,'Fertig!');
+      setTimeout(function(){ hidePg('pgwrap2') },700);
+    }catch(err){ hidePg('pgwrap2'); showToast('Excel Fehler: '+err.message,true); console.error(err) }
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function renderSheetTabs(){
+  if(eSheets.length<=1){ $('sheetSec').style.display='none'; return }
+  $('sheetSec').style.display='block';
+  var h='';
+  for(var i=0;i<eSheets.length;i++)
+    h+='<div class="sheet-tab'+(i===eActiveSheet?' on':'')+'" onclick="selectSheet('+i+')">'+esc(eSheets[i])+'</div>';
+  $('sheetTabs').innerHTML=h;
+}
+
+function selectSheet(idx){ eActiveSheet=idx; renderSheetTabs(); loadSheet(idx) }
+
+function loadSheet(idx){
+  var ws=eWorkbook.Sheets[eSheets[idx]];
+  var json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  if(json.length<1){ eHeaders=[]; eRows=[]; buildColMap(); e2xPreview(); return }
+  eHeaders=json[0].map(function(h){ return String(h).trim() });
+  eRows=[];
+  for(var i=1;i<json.length;i++){
+    var row={},empty=true;
+    for(var c=0;c<eHeaders.length;c++){
+      var v=json[i][c]; row[eHeaders[c]]=v!==undefined&&v!==null?String(v):'';
+      if(row[eHeaders[c]]!=='') empty=false;
+    }
+    if(!empty) eRows.push(row);
+  }
+  buildColMap();
+  $('ebtn2').disabled=eRows.length===0; setFooterE2X(); e2xPreview();
+  showToast(eRows.length+' Zeilen, '+eHeaders.length+' Spalten geladen');
+}
+
+function buildColMap(){
+  var map=$('colMap'); eColMap={};
+  var h='';
+  for(var i=0;i<eHeaders.length;i++){
+    var hdr=eHeaders[i], safe=sanitizeTag(hdr); eColMap[hdr]=safe;
+    h+='<div class="cfg-row"><span class="cfg-lbl" style="font-size:9px;min-width:100px" title="'+esc(hdr)+'">'+esc(hdr.length>14?hdr.substring(0,14)+'…':hdr)+'</span>';
+    h+='<input class="cfg-inp" value="'+esc(safe)+'" data-col="'+esc(hdr)+'" oninput="updateColMap(this)"/></div>';
+  }
+  map.innerHTML=h||'<div class="empty-msg">Keine Spalten</div>';
+}
+
+function updateColMap(inp){ eColMap[inp.getAttribute('data-col')]=inp.value.trim(); e2xPreview() }
+function sanitizeTag(s){ var t=s.replace(/[^a-zA-Z0-9_.\-]/g,'_').replace(/^([0-9.\-])/,'_$1'); return t||'field' }
+
+/* ══════════════════════════════════════
+   E2X PREVIEW & EXPORT
+══════════════════════════════════════ */
+function e2xPreview(){
+  var wrap=$('twrap2'),stats=$('rstats2');
+  if(!eHeaders.length){ wrap.innerHTML='<div class="pempty"><div class="icon">⬡</div><div>Excel hochladen für XML-Vorschau</div></div>'; stats.innerHTML='—'; return }
+  var rootTag=$('cfgRoot').value.trim()||'data';
+  var rowTag=$('cfgRow').value.trim()||'record';
+  var enc=$('cfgEnc').value, mode=$('cfgMode').value;
+  var limit=Math.min(eRows.length,50);
+  var xml='<?xml version="1.0" encoding="'+enc+'"?>\n';
+  xml+='<'+rootTag+'>\n';
+  for(var i=0;i<limit;i++) xml+=buildRowXML(eRows[i],rowTag,mode,'  ');
+  if(eRows.length>limit) xml+='  <!-- …'+(eRows.length-limit)+' weitere Zeilen … -->\n';
+  xml+='</'+rootTag+'>';
+  wrap.innerHTML='<div class="xml-preview">'+highlightXML(xml)+'</div>';
+  stats.innerHTML='<b>'+eRows.length+'</b> Zeilen · <b>'+eHeaders.length+'</b> Spalten';
+}
+
+function buildRowXML(row,rowTag,mode,indent){
+  var attrs='',children='';
+  for(var i=0;i<eHeaders.length;i++){
+    var hdr=eHeaders[i],tag=eColMap[hdr],val=row[hdr]||'';
+    if(!tag) continue;
+    if(mode==='attributes'){ attrs+=' '+tag+'="'+escXML(val)+'"' }
+    else if(mode==='mixed'&&hdr.charAt(0)==='@'){ attrs+=' '+tag.replace(/^@/,'')+' ="'+escXML(val)+'"' }
+    else{ children+=indent+'  <'+tag+'>'+escXML(val)+'</'+tag+'>\n' }
+  }
+  return children ? indent+'<'+rowTag+attrs+'>\n'+children+indent+'</'+rowTag+'>\n' : indent+'<'+rowTag+attrs+'/>\n';
+}
+
+function escXML(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;') }
+
+function highlightXML(xml){
+  return esc(xml)
+    .replace(/&lt;(\/?)([\w:.\-]+)/g,'&lt;$1<span class="xtag">$2</span>')
+    .replace(/([\w:.\-]+)=&quot;([^&]*?)&quot;/g,'<span class="xattr">$1</span>=&quot;<span class="xval">$2</span>&quot;')
+    .replace(/&lt;!--(.+?)--&gt;/g,'<span style="color:var(--muted)">&lt;!--$1--&gt;</span>');
+}
+
+function doExportXML(){
+  if(!eRows.length) return;
+  var rootTag=$('cfgRoot').value.trim()||'data';
+  var rowTag=$('cfgRow').value.trim()||'record';
+  var enc=$('cfgEnc').value, mode=$('cfgMode').value;
+  var xml='<?xml version="1.0" encoding="'+enc+'"?>\n<'+rootTag+'>\n';
+  for(var i=0;i<eRows.length;i++) xml+=buildRowXML(eRows[i],rowTag,mode,'  ');
+  xml+='</'+rootTag+'>\n';
+  var blob=new Blob([xml],{type:'application/xml;charset='+enc});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=(eFileName||'export')+'_'+new Date().toISOString().slice(0,10)+'.xml';
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast(eRows.length+' Zeilen als XML exportiert');
+}
+
+/* ══════════════════════════════════════
+   XML PARSER HELPERS
+══════════════════════════════════════ */
+function getTag(node){ var n=node.localName||node.nodeName||''; var i=n.indexOf(':'); if(i!==-1) n=n.substring(i+1); return n.toUpperCase() }
+function childGroups(node){ var groups={},order=[]; for(var i=0;i<node.childNodes.length;i++){ var ch=node.childNodes[i]; if(ch.nodeType!==1) continue; var t=getTag(ch); if(!groups[t]){ groups[t]=[]; order.push(t) } groups[t].push(ch) } return{groups:groups,order:order} }
+function isLeaf(node){ for(var i=0;i<node.childNodes.length;i++){ if(node.childNodes[i].nodeType===1) return false } return true }
+function findAll(root,tagUpper){ var results=[],all=root.getElementsByTagName('*'); for(var i=0;i<all.length;i++){ if(getTag(all[i])===tagUpper) results.push(all[i]) } return results }
+function findChildrenByTag(node,tagUpper){ var r=[]; for(var i=0;i<node.childNodes.length;i++){ var ch=node.childNodes[i]; if(ch.nodeType===1&&getTag(ch)===tagUpper) r.push(ch) } return r }
+
+function findRowTag(root){
+  var counts={};
+  function scan(node,depth){
+    var info=childGroups(node);
+    for(var i=0;i<info.order.length;i++){
+      var tag=info.order[i],cnt=info.groups[tag].length;
+      if(!counts[tag]||cnt>counts[tag].max||(cnt===counts[tag].max&&depth<counts[tag].depth)) counts[tag]={max:cnt,depth:depth};
+      for(var j=0;j<info.groups[tag].length;j++) scan(info.groups[tag][j],depth+1);
+    }
+  }
+  scan(root,1);
+  var best=getTag(root),bestCnt=1,bestDep=0;
+  Object.keys(counts).forEach(function(t){ var c=counts[t]; if(c.max>bestCnt||(c.max===bestCnt&&c.depth<bestDep)){ bestCnt=c.max; bestDep=c.depth; best=t } });
+  return best;
+}
+
+function detectKVPatterns(sampleNode){
+  var kvMap={};
+  function detect(n){
+    var info=childGroups(n);
+    for(var i=0;i<info.order.length;i++){
+      var tag=info.order[i],sibs=info.groups[tag];
+      if(sibs.length>=2){
+        var firstInfo=childGroups(sibs[0]);
+        if(firstInfo.order.length>=2){
+          var kTag=firstInfo.order[0],vTag=firstInfo.order[1],keys={},allHaveKey=true;
+          for(var si=0;si<sibs.length;si++){ var kEls=findChildrenByTag(sibs[si],kTag); if(kEls.length===0){allHaveKey=false;break} keys[kEls[0].textContent.trim()]=1 }
+          if(allHaveKey&&Object.keys(keys).length>1) kvMap[tag]={k:kTag,v:vTag};
         }
       }
+      if(sibs.length>0) detect(sibs[0]);
+    }
+  }
+  detect(sampleNode);
+  return kvMap;
+}
 
-      /* STARTUP */
-      if (stateLoad()) {
-        el("fbar").classList.add("show");
-        el("fname").textContent = gFileName + ".xml";
-        el("fsize").textContent = gRows.length + " Datensätze (gecacht)";
-        el("ebtn").disabled = gSelected.size === 0;
-        setFooter();
-        syncBtns();
-        renderList();
-        renderTable();
-        showToast("Stand wiederhergestellt (" + gRows.length + " Datensätze)");
-      }
-
-      /* FILE */
-      var dzEl = el("dz");
-      el("fi").addEventListener("change", function (e) {
-        if (e.target.files[0]) loadFile(e.target.files[0]);
-      });
-      dzEl.addEventListener("dragover", function (e) {
-        e.preventDefault();
-        dzEl.classList.add("over");
-      });
-      dzEl.addEventListener("dragleave", function () {
-        dzEl.classList.remove("over");
-      });
-      dzEl.addEventListener("drop", function (e) {
-        e.preventDefault();
-        dzEl.classList.remove("over");
-        if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
-      });
-
-      function loadFile(file) {
-        gFileName = file.name.replace(/\.xml$/i, "");
-        el("fbar").classList.add("show");
-        el("fname").textContent = file.name;
-        el("fsize").textContent = fmtB(file.size);
-        setPg(0, "Lese Datei…");
-        var r = new FileReader();
-        r.onload = function (e) {
-          try {
-            parseXML(e.target.result);
-          } catch (err) {
-            hidePg();
-            showToast("Fehler: " + err.message, true);
-            console.error(err);
-          }
-        };
-        r.readAsText(file);
-      }
-      function fmtB(n) {
-        return n < 1024
-          ? n + " B"
-          : n < 1048576
-            ? (n / 1024).toFixed(1) + " KB"
-            : (n / 1048576).toFixed(1) + " MB";
-      }
-
-      /* ============================================================
-         PARSER — completely rewritten for robustness
-         ============================================================ */
-
-      /* Get a clean tag name: strip namespace prefix, uppercase */
-      function getTag(node) {
-        var n = node.localName || node.nodeName || "";
-        var i = n.indexOf(":");
-        if (i !== -1) n = n.substring(i + 1);
-        return n.toUpperCase();
-      }
-
-      /* Collect direct element children grouped by tag */
-      function childGroups(node) {
-        var groups = {};
-        var order = [];
-        for (var i = 0; i < node.childNodes.length; i++) {
-          var ch = node.childNodes[i];
-          if (ch.nodeType !== 1) continue; // elements only
-          var t = getTag(ch);
-          if (!groups[t]) {
-            groups[t] = [];
-            order.push(t);
-          }
-          groups[t].push(ch);
-        }
-        return { groups: groups, order: order };
-      }
-
-      /* Check if a node is a leaf (no element children) */
-      function isLeaf(node) {
-        for (var i = 0; i < node.childNodes.length; i++) {
-          if (node.childNodes[i].nodeType === 1) return false;
-        }
-        return true;
-      }
-
-      /* Get text content of a node (direct text only for mixed content) */
-      function getText(node) {
-        var t = "";
-        for (var i = 0; i < node.childNodes.length; i++) {
-          var cn = node.childNodes[i];
-          if (cn.nodeType === 3 || cn.nodeType === 4) t += cn.nodeValue;
-        }
-        return t.trim();
-      }
-
-      /* Find all elements with a given local tag name (case-insensitive, namespace-agnostic) */
-      function findAll(root, tagUpper) {
-        var results = [];
-        var all = root.getElementsByTagName("*");
-        for (var i = 0; i < all.length; i++) {
-          if (getTag(all[i]) === tagUpper) results.push(all[i]);
-        }
-        return results;
-      }
-
-      /* Find the repeating row element */
-      function findRowTag(root) {
-        var counts = {}; // tag -> {max, depth}
-        function scan(node, depth) {
-          var info = childGroups(node);
-          for (var i = 0; i < info.order.length; i++) {
-            var tag = info.order[i];
-            var cnt = info.groups[tag].length;
-            if (
-              !counts[tag] ||
-              cnt > counts[tag].max ||
-              (cnt === counts[tag].max && depth < counts[tag].depth)
-            ) {
-              counts[tag] = { max: cnt, depth: depth };
-            }
-            // recurse into children
-            for (var j = 0; j < info.groups[tag].length; j++) {
-              scan(info.groups[tag][j], depth + 1);
-            }
-          }
-        }
-        scan(root, 1);
-
-        var best = getTag(root),
-          bestCnt = 1,
-          bestDep = 0;
-        var tags = Object.keys(counts);
-        for (var i = 0; i < tags.length; i++) {
-          var c = counts[tags[i]];
-          if (c.max > bestCnt || (c.max === bestCnt && c.depth < bestDep)) {
-            bestCnt = c.max;
-            bestDep = c.depth;
-            best = tags[i];
-          }
-        }
-        return best;
-      }
-
-      /* Detect key-value patterns in repeating child groups */
-      function detectKVPatterns(sampleNode) {
-        var kvMap = {};
-        function detect(n) {
-          // <-- Parameter war "node", kollidierte mit nichts, aber der Aufruf unten nutzte "node"
-          var info = childGroups(n);
-          for (var i = 0; i < info.order.length; i++) {
-            var tag = info.order[i];
-            var sibs = info.groups[tag];
-            if (sibs.length >= 2) {
-              var firstInfo = childGroups(sibs[0]);
-              if (firstInfo.order.length >= 2) {
-                var kTag = firstInfo.order[0];
-                var vTag = firstInfo.order[1];
-                var keys = {};
-                var allHaveKey = true;
-                for (var si = 0; si < sibs.length; si++) {
-                  var kEls = findChildrenByTag(sibs[si], kTag);
-                  if (kEls.length === 0) {
-                    allHaveKey = false;
-                    break;
-                  }
-                  keys[kEls[0].textContent.trim()] = 1;
-                }
-                if (allHaveKey && Object.keys(keys).length > 1) {
-                  kvMap[tag] = { k: kTag, v: vTag };
-                }
-              }
-            }
-            if (sibs.length > 0) detect(sibs[0]); // Rekursion
-          }
-        }
-        detect(sampleNode); // <-- HIER war der Bug: es stand "detect(node)" statt "detect(sampleNode)"
-        return kvMap;
-      }
-
-      /* Find direct children with a specific tag */
-      function findChildrenByTag(node, tagUpper) {
-        var results = [];
-        for (var i = 0; i < node.childNodes.length; i++) {
-          var ch = node.childNodes[i];
-          if (ch.nodeType === 1 && getTag(ch) === tagUpper) results.push(ch);
-        }
-        return results;
-      }
-
-      /* Walk a node and extract all fields into a row object */
-      function walkNode(node, path, row, kvMap) {
-        // Attributes
-        if (node.attributes) {
-          for (var ai = 0; ai < node.attributes.length; ai++) {
-            var attr = node.attributes[ai];
-            var aName = attr.name || attr.nodeName || "";
-            // Skip namespace declarations
-            if (aName === "xmlns" || aName.indexOf("xmlns:") === 0) continue;
-            // Strip prefix from attribute name
-            var cleanName = aName;
-            var ci = cleanName.indexOf(":");
-            if (ci !== -1) cleanName = cleanName.substring(ci + 1);
-            row[path + "/@" + cleanName.toUpperCase()] = attr.value;
-          }
-        }
-
-        // Leaf node
-        if (isLeaf(node)) {
-          var text = node.textContent ? node.textContent.trim() : "";
-          row[path] = text;
-          return;
-        }
-
-        // Process children
-        var info = childGroups(node);
-        for (var i = 0; i < info.order.length; i++) {
-          var ctag = info.order[i];
-          var sibs = info.groups[ctag];
-
-          if (sibs.length >= 2 && kvMap[ctag]) {
-            // KV pivot pattern
-            var kv = kvMap[ctag];
-            for (var si = 0; si < sibs.length; si++) {
-              var sib = sibs[si];
-              var kEls = findChildrenByTag(sib, kv.k);
-              var vEls = findChildrenByTag(sib, kv.v);
-              if (kEls.length === 0) continue;
-              var keyName = kEls[0].textContent
-                .trim()
-                .replace(/[\/\\?*\[\]:]/g, "_");
-              var col = path + "/" + ctag + "[" + keyName + "]";
-              row[col] = vEls.length ? vEls[0].textContent.trim() : "";
-              // Extra fields inside this KV element
-              for (var sci = 0; sci < sib.childNodes.length; sci++) {
-                var sc = sib.childNodes[sci];
-                if (sc.nodeType !== 1) continue;
-                var scTag = getTag(sc);
-                if (scTag !== kv.k && scTag !== kv.v) {
-                  walkNode(sc, col + "/" + scTag, row, kvMap);
-                }
-              }
-            }
-          } else if (sibs.length >= 2) {
-            // Indexed repeating elements
-            for (var ri = 0; ri < sibs.length; ri++) {
-              walkNode(
-                sibs[ri],
-                path + "/" + ctag + "[" + (ri + 1) + "]",
-                row,
-                kvMap,
-              );
-            }
-          } else {
-            // Single child
-            walkNode(sibs[0], path + "/" + ctag, row, kvMap);
-          }
+function walkNode(node,path,row,kvMap){
+  if(node.attributes){
+    for(var ai=0;ai<node.attributes.length;ai++){
+      var attr=node.attributes[ai],aName=attr.name||attr.nodeName||'';
+      if(aName==='xmlns'||aName.indexOf('xmlns:')===0) continue;
+      var cn=aName; var ci=cn.indexOf(':'); if(ci!==-1) cn=cn.substring(ci+1);
+      row[path+'/@'+cn.toUpperCase()]=attr.value;
+    }
+  }
+  if(isLeaf(node)){ row[path]=node.textContent?node.textContent.trim():''; return }
+  var info=childGroups(node);
+  for(var i=0;i<info.order.length;i++){
+    var ctag=info.order[i],sibs=info.groups[ctag];
+    if(sibs.length>=2&&kvMap[ctag]){
+      var kv=kvMap[ctag];
+      for(var si=0;si<sibs.length;si++){
+        var sib=sibs[si],kEls=findChildrenByTag(sib,kv.k),vEls=findChildrenByTag(sib,kv.v);
+        if(kEls.length===0) continue;
+        var keyName=kEls[0].textContent.trim().replace(/[\/\\?*\[\]:]/g,'_');
+        var col=path+'/'+ctag+'['+keyName+']';
+        row[col]=vEls.length?vEls[0].textContent.trim():'';
+        for(var sci=0;sci<sib.childNodes.length;sci++){
+          var sc=sib.childNodes[sci]; if(sc.nodeType!==1) continue;
+          var scTag=getTag(sc); if(scTag!==kv.k&&scTag!==kv.v) walkNode(sc,col+'/'+scTag,row,kvMap);
         }
       }
+    } else if(sibs.length>=2){
+      for(var ri=0;ri<sibs.length;ri++) walkNode(sibs[ri],path+'/'+ctag+'['+(ri+1)+']',row,kvMap);
+    } else {
+      walkNode(sibs[0],path+'/'+ctag,row,kvMap);
+    }
+  }
+}
 
-      function parseXML(text) {
-        setPg(10, "Parse XML…");
+/* ══════════════════════════════════════
+   PARSE XML → EXTRACT ROWS
+══════════════════════════════════════ */
+// Store parsed XML DOM for hierarchy view
+var gXmlRoot=null;
 
-        /* Fix bare & */
-        text = text.replace(
-          /&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)/g,
-          "&amp;",
-        );
+function parseXML(text){
+  setPg('pgwrap','pgfill','pglbl',10,'Parse XML…');
+  text=text.replace(/&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)/g,'&amp;');
+  var root=null,errMsg='';
+  try{ var doc=new DOMParser().parseFromString(text,'text/xml'); var pe=doc.querySelector('parsererror'); if(pe) errMsg=pe.textContent.substring(0,120); else root=doc.documentElement }catch(e){ errMsg=String(e) }
+  if(!root){
+    try{ var doc2=new DOMParser().parseFromString(text,'text/html'); var body=doc2.body; if(body&&body.children.length>0){ for(var fi2=0;fi2<body.children.length;fi2++){ var cand=body.children[fi2],tn=(cand.tagName||'').toLowerCase(); if(tn!=='script'&&tn!=='style'&&tn!=='link'){root=cand;break} } } }catch(e){}
+  }
+  if(!root){ hidePg('pgwrap'); showToast('XML Fehler: '+(errMsg||'Konnte nicht geparst werden'),true); return }
 
-        var root = null,
-          errMsg = "";
+  gXmlRoot=root; // save for hierarchy view
 
-        // Try strict XML parsing first
-        try {
-          var parser = new DOMParser();
-          var doc = parser.parseFromString(text, "text/xml");
-          var pe = doc.querySelector("parsererror");
-          if (pe) {
-            errMsg = pe.textContent.substring(0, 120);
-          } else {
-            root = doc.documentElement;
-          }
-        } catch (e) {
-          errMsg = String(e);
-        }
+  setPg('pgwrap','pgfill','pglbl',25,'Erkunde Struktur…');
+  var rowTag=findRowTag(root),rowEls=findAll(root,rowTag);
+  if(rowEls.length===0||(rowEls.length===1&&rowEls[0]===root)){
+    var kids=[]; for(var ki=0;ki<root.children.length;ki++) kids.push(root.children[ki]);
+    if(kids.length>0){ rowEls=kids; rowTag=getTag(kids[0]) }
+  }
+  if(rowEls.length===0){ hidePg('pgwrap'); showToast('Keine Datensätze gefunden',true); return }
+  setPg('pgwrap','pgfill','pglbl',40,rowEls.length+' Datensätze…');
+  var kvMap=rowEls.length>0?detectKVPatterns(rowEls[0]):{};
+  setPg('pgwrap','pgfill','pglbl',55,'Extrahiere Felder…');
+  var newRows=[];
+  for(var i=0;i<rowEls.length;i++){
+    var row={}; walkNode(rowEls[i],rowTag,row,kvMap); newRows.push(row);
+    if(i%500===0&&i>0) setPg('pgwrap','pgfill','pglbl',55+Math.floor((i/rowEls.length)*25),'Verarbeite '+i+'/'+rowEls.length+'…');
+  }
+  setPg('pgwrap','pgfill','pglbl',82,'Baue Feldliste…');
+  var fieldOrder={},fieldCount={},orderIdx=0;
+  for(var ri2=0;ri2<newRows.length;ri2++){
+    var keys=Object.keys(newRows[ri2]);
+    for(var ki2=0;ki2<keys.length;ki2++){
+      var k=keys[ki2];
+      if(fieldOrder[k]===undefined) fieldOrder[k]=orderIdx++;
+      var val=newRows[ri2][k];
+      if(val!==undefined&&val!=='') fieldCount[k]=(fieldCount[k]||0)+1;
+      else if(fieldCount[k]===undefined) fieldCount[k]=0;
+    }
+  }
+  var allPaths=Object.keys(fieldOrder); allPaths.sort(function(a,b){ return fieldOrder[a]-fieldOrder[b] });
+  gFields=allPaths.map(function(path){ var parts=path.split('/'); var lastPart=parts[parts.length-1]; var isAttr=lastPart.charAt(0)==='@'; return{path:path,leaf:isAttr?lastPart.slice(1):lastPart,isAttr:isAttr,count:fieldCount[path]||0} });
+  gRows=newRows; gSelected=new Set(); gCollapsed=new Set();
+  setPg('pgwrap','pgfill','pglbl',100,'Fertig!'); setTimeout(function(){ hidePg('pgwrap') },700);
+  $('ebtn').disabled=true; setFooterX2E(); syncBtns(); renderList(); renderTable();
+  showToast(gRows.length+' Datensätze, '+gFields.length+' Felder erkannt'); stateSave();
+}
 
-        // Fallback: try as HTML
-        if (!root) {
-          try {
-            var parser2 = new DOMParser();
-            var doc2 = parser2.parseFromString(text, "text/html");
-            var body = doc2.body;
-            if (body && body.children.length > 0) {
-              // Find the first real element (skip script, style, etc.)
-              for (var fi = 0; fi < body.children.length; fi++) {
-                var cand = body.children[fi];
-                var tn = (cand.tagName || "").toLowerCase();
-                if (tn !== "script" && tn !== "style" && tn !== "link") {
-                  root = cand;
-                  break;
-                }
-              }
-            }
-          } catch (e) {}
-        }
+/* ══════════════════════════════════════
+   HIERARCHY VIEW (in right panel)
+══════════════════════════════════════ */
+function buildHierarchyHTML(root){
+  var totalAttrs=0, totalEls=0, maxDepth=0;
+  var schemaNodes=[];
 
-        if (!root) {
-          hidePg();
-          showToast(
-            "XML Fehler: " + (errMsg || "Konnte nicht geparst werden"),
-            true,
-          );
-          return;
-        }
-
-        // Skip wrapper elements with single child (like html > body > root)
-        var safety = 0;
-        while (root.children.length === 1 && safety < 5) {
-          var onlyChild = root.children[0];
-          var onlyTag = (onlyChild.tagName || "").toLowerCase();
-          if (onlyTag === "head" || onlyTag === "body") {
-            // It's an HTML wrapper, go into body
-            var bodyEl = root.querySelector("body");
-            if (bodyEl && bodyEl.children.length > 0) {
-              root = bodyEl.children[0];
-              break;
-            }
-          }
-          // Don't unwrap if the single child itself has siblings at the next level
-          break;
-        }
-
-        setPg(25, "Erkunde Struktur…");
-
-        // Find the repeating row tag
-        var rowTag = findRowTag(root);
-        var rowEls = findAll(root, rowTag);
-
-        // If root itself is the "rowTag" and there are no descendants with that tag, treat root's children
-        if (
-          rowEls.length === 0 ||
-          (rowEls.length === 1 && rowEls[0] === root)
-        ) {
-          // Maybe each direct child of root is a row
-          var kids = [];
-          for (var ki = 0; ki < root.children.length; ki++) {
-            kids.push(root.children[ki]);
-          }
-          if (kids.length > 0) {
-            rowEls = kids;
-            rowTag = getTag(kids[0]);
-          }
-        }
-
-        if (rowEls.length === 0) {
-          hidePg();
-          showToast("Keine Datensätze gefunden", true);
-          return;
-        }
-
-        setPg(40, rowEls.length + " Datensätze…");
-
-        // Detect KV patterns from first row element
-        var kvMap = {};
-        if (rowEls.length > 0) {
-          kvMap = detectKVPatterns(rowEls[0]);
-        }
-
-        setPg(55, "Extrahiere Felder…");
-
-        // Extract all rows
-        var newRows = [];
-        for (var i = 0; i < rowEls.length; i++) {
-          var row = {};
-          walkNode(rowEls[i], rowTag, row, kvMap);
-          newRows.push(row);
-          // Progress update every 500 rows
-          if (i % 500 === 0 && i > 0) {
-            setPg(
-              55 + Math.floor((i / rowEls.length) * 25),
-              "Verarbeite " + i + "/" + rowEls.length + "…",
-            );
-          }
-        }
-
-        setPg(82, "Baue Feldliste…");
-
-        // Build field list preserving document order
-        var fieldOrder = {};
-        var fieldCount = {};
-        var orderIdx = 0;
-
-        for (var ri2 = 0; ri2 < newRows.length; ri2++) {
-          var keys = Object.keys(newRows[ri2]);
-          for (var ki2 = 0; ki2 < keys.length; ki2++) {
-            var k = keys[ki2];
-            if (fieldOrder[k] === undefined) {
-              fieldOrder[k] = orderIdx++;
-            }
-            var val = newRows[ri2][k];
-            if (val !== undefined && val !== "") {
-              fieldCount[k] = (fieldCount[k] || 0) + 1;
-            } else {
-              if (fieldCount[k] === undefined) fieldCount[k] = 0;
-            }
-          }
-        }
-
-        var allPaths = Object.keys(fieldOrder);
-        allPaths.sort(function (a, b) {
-          return fieldOrder[a] - fieldOrder[b];
-        });
-
-        gFields = allPaths.map(function (path) {
-          var parts = path.split("/");
-          var lastPart = parts[parts.length - 1];
-          var isAttr = lastPart.charAt(0) === "@";
-          return {
-            path: path,
-            leaf: isAttr ? lastPart.slice(1) : lastPart,
-            isAttr: isAttr,
-            count: fieldCount[path] || 0,
-          };
-        });
-
-        gRows = newRows;
-        gSelected = new Set();
-
-        setPg(100, "Fertig!");
-        setTimeout(hidePg, 700);
-        el("ebtn").disabled = true;
-        setFooter();
-        syncBtns();
-        renderList();
-        renderTable();
-        showToast(
-          gRows.length + " Datensätze, " + gFields.length + " Felder erkannt",
-        );
-        stateSave();
+  function analyze(node, depth, parentPath){
+    if(depth>maxDepth) maxDepth=depth;
+    var tag=getTag(node);
+    var attrCount=0;
+    var attrs=[];
+    if(node.attributes){
+      for(var ai=0;ai<node.attributes.length;ai++){
+        var an=node.attributes[ai];
+        if(an.name==='xmlns'||an.name.indexOf('xmlns:')===0) continue;
+        attrCount++; totalAttrs++;
+        attrs.push(an.name+': '+an.value.substring(0,30)+(an.value.length>30?'…':''));
       }
+    }
+    var childTagCounts={}, childTagSamples={};
+    for(var ci=0;ci<node.children.length;ci++){
+      var ch=node.children[ci], ct=getTag(ch);
+      childTagCounts[ct]=(childTagCounts[ct]||0)+1;
+      if(!childTagSamples[ct]) childTagSamples[ct]=ch;
+    }
+    var isTextLeaf=isLeaf(node);
+    var textSample=isTextLeaf?(node.textContent||'').trim().substring(0,40):'';
+    schemaNodes.push({depth:depth,tag:tag,attrCount:attrCount,attrs:attrs,childTags:Object.keys(childTagCounts),childTagCounts:childTagCounts,isTextLeaf:isTextLeaf,textSample:textSample,parentPath:parentPath});
+    totalEls++;
+    // recurse into first of each unique child tag only (schema, not data repeat)
+    Object.keys(childTagSamples).forEach(function(ct){
+      analyze(childTagSamples[ct],depth+1,(parentPath?parentPath+'/':'')+tag);
+    });
+  }
+  analyze(root,0,'');
 
-      /* FIELD LIST */
-      function renderList() {
-        var c = el("flist");
-        if (!gFields.length) {
-          c.innerHTML =
-            '<div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>';
-          return;
-        }
-        var list = gFields.slice();
-        if (gQuery) {
-          var q = gQuery.toLowerCase();
-          list = list.filter(function (f) {
-            return f.path.toLowerCase().indexOf(q) !== -1;
-          });
-        }
-        if (gView === "az")
-          list.sort(function (a, b) {
-            return a.path.localeCompare(b.path);
-          });
-        if (!list.length) {
-          c.innerHTML = '<div class="empty-msg">Keine Treffer</div>';
-          return;
-        }
-        var h = "";
-        for (var i = 0; i < list.length; i++) {
-          var f = list[i],
-            sel = gSelected.has(f.path);
-          var kvm = f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
-          var pre, lf;
-          if (kvm) {
-            pre = kvm[1].replace(/\/$/, "");
-            lf = kvm[2];
-          } else {
-            var pts = f.path.split("/");
-            pre = pts.slice(0, -1).join("/");
-            lf = pts[pts.length - 1];
-          }
-          var lfc = f.isAttr ? "lf at" : "lf";
-          var dp = pre
-            ? '<span style="color:var(--muted)">' +
-              esc(pre) +
-              '/</span><span class="' +
-              lfc +
-              '">' +
-              esc(lf) +
-              "</span>"
-            : '<span class="' + lfc + '">' + esc(lf) + "</span>";
-          h +=
-            '<div class="fi' +
-            (sel ? " sel" : "") +
-            '" data-path="' +
-            esc(f.path) +
-            '" onclick="doToggle(this)"><div class="fck"></div><div class="fp" title="' +
-            esc(f.path) +
-            '">' +
-            dp +
-            '</div><div class="fc">' +
-            f.count +
-            "</div></div>";
-        }
-        c.innerHTML = h;
-      }
+  // Stats bar
+  var html='<div class="hier-stats-bar">';
+  html+='<div class="hier-stat"><div class="hier-stat-val">'+totalEls+'</div><div class="hier-stat-lbl">Elemente (Schema)</div></div>';
+  html+='<div class="hier-stat"><div class="hier-stat-val green">'+totalAttrs+'</div><div class="hier-stat-lbl">Attribute gesamt</div></div>';
+  html+='<div class="hier-stat"><div class="hier-stat-val amber">'+(maxDepth+1)+'</div><div class="hier-stat-lbl">Tiefe (max)</div></div>';
+  html+='</div>';
 
-      function doToggle(e) {
-        var p = e.getAttribute("data-path");
-        if (!p) return;
-        if (gSelected.has(p)) gSelected.delete(p);
-        else gSelected.add(p);
-        el("ebtn").disabled = gSelected.size === 0;
-        syncBtns();
-        renderList();
-        renderTable();
-        stateSave();
-      }
-      function doAll() {
-        gFields.forEach(function (f) {
-          gSelected.add(f.path);
-        });
-        el("ebtn").disabled = false;
-        syncBtns();
-        renderList();
-        renderTable();
-        stateSave();
-      }
-      function doNone() {
-        gSelected.clear();
-        el("ebtn").disabled = true;
-        syncBtns();
-        renderList();
-        renderTable();
-        stateSave();
-      }
-      function doView(v) {
-        gView = v;
-        syncBtns();
-        renderList();
-        stateSave();
-      }
-      function doSearch(q) {
-        gQuery = q;
-        renderList();
-      }
-      function syncBtns() {
-        var n = 0;
-        for (var i = 0; i < gFields.length; i++) {
-          if (gSelected.has(gFields[i].path)) n++;
-        }
-        el("btnAll").className =
-          "tbtn" + (gFields.length > 0 && n === gFields.length ? " on" : "");
-        el("btnNone").className = "tbtn" + (n === 0 ? " on" : "");
-        el("btnFlat").className = "tbtn" + (gView === "flat" ? " on" : "");
-        el("btnSort").className = "tbtn" + (gView === "az" ? " on" : "");
-      }
+  html+='<div class="hier-schema">';
+  for(var i=0;i<schemaNodes.length;i++){
+    var sn=schemaNodes[i];
+    var indentHTML='';
+    for(var d=0;d<sn.depth;d++) indentHTML+='<div class="hier-line"></div>';
+    html+='<div class="hier-row">';
+    html+='<div class="hier-indent">'+indentHTML+'</div>';
+    html+='<div class="hier-content">';
+    html+='<span class="hier-tag-el">&lt;'+sn.tag+'&gt;</span>';
+    // attributes
+    for(var ai2=0;ai2<sn.attrs.length;ai2++){
+      html+='<span class="hier-tag-attr">@'+esc(sn.attrs[ai2])+'</span>';
+    }
+    // child tags
+    var ctKeys=Object.keys(sn.childTagCounts);
+    for(var ci2=0;ci2<Math.min(ctKeys.length,4);ci2++){
+      var ct=ctKeys[ci2],cnt=sn.childTagCounts[ct];
+      html+='<span class="hier-count">'+esc(ct)+(cnt>1?' ×'+cnt:'')+'</span>';
+    }
+    if(ctKeys.length>4) html+='<span class="hier-count">+'+( ctKeys.length-4)+' mehr</span>';
+    // text sample
+    if(sn.isTextLeaf&&sn.textSample) html+='<span class="hier-sample">'+esc(sn.textSample)+'</span>';
+    html+='</div>';
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
+}
 
-      /* PREVIEW */
-      var PLIMIT = 200;
-      function renderTable() {
-        var wrap = el("twrap"),
-          stats = el("rstats");
-        if (!gSelected.size) {
-          wrap.innerHTML =
-            '<div class="pempty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>';
-          stats.innerHTML = "—";
-          return;
-        }
-        var cols = Array.from(gSelected),
-          labels = cols.map(pathLabel),
-          slice = gRows.slice(0, PLIMIT);
-        var th = "";
-        for (var ci = 0; ci < cols.length; ci++)
-          th +=
-            "<th>" +
-            esc(labels[ci]) +
-            '<span class="thx" data-path="' +
-            esc(cols[ci]) +
-            '" onclick="doRmCol(this)">✕</span></th>';
-        var tb = "";
-        for (var ri = 0; ri < slice.length; ri++) {
-          tb += "<tr>";
-          for (var ci2 = 0; ci2 < cols.length; ci2++) {
-            var v = slice[ri][cols[ci2]];
-            tb +=
-              v !== undefined && v !== ""
-                ? '<td title="' + esc(v) + '">' + esc(v) + "</td>"
-                : '<td class="nil">—</td>';
-          }
-          tb += "</tr>";
-        }
-        wrap.innerHTML =
-          "<table><thead><tr>" +
-          th +
-          "</tr></thead><tbody>" +
-          tb +
-          "</tbody></table>";
-        stats.innerHTML =
-          "<b>" +
-          gRows.length +
-          "</b> Zeilen · <b>" +
-          cols.length +
-          "</b> Spalten" +
-          (gRows.length > PLIMIT ? " · Vorschau: " + PLIMIT : "");
-      }
-      function doRmCol(e) {
-        var p = e.getAttribute("data-path");
-        gSelected.delete(p);
-        el("ebtn").disabled = gSelected.size === 0;
-        syncBtns();
-        renderList();
-        renderTable();
-        stateSave();
-      }
+/* ══════════════════════════════════════
+   TREE BUILDER
+══════════════════════════════════════ */
+function buildTree(fields){
+  var root={children:{},fields:[],tag:'ROOT'};
+  for(var i=0;i<fields.length;i++){
+    var f=fields[i],parts=f.path.split('/'),node=root;
+    for(var p=0;p<parts.length-1;p++){
+      var seg=parts[p];
+      if(!node.children[seg]) node.children[seg]={children:{},fields:[],tag:seg,fullPath:parts.slice(0,p+1).join('/')};
+      node=node.children[seg];
+    }
+    node.fields.push(f);
+  }
+  return root;
+}
 
-      /* EXPORT */
-      function doExport() {
-        if (!gSelected.size || !gRows.length) return;
-        var cols = Array.from(gSelected),
-          labels = cols.map(pathLabel),
-          data = [labels];
-        for (var ri = 0; ri < gRows.length; ri++) {
-          var row = [];
-          for (var ci = 0; ci < cols.length; ci++) {
-            var v = gRows[ri][cols[ci]];
-            row.push(v !== undefined ? v : "");
-          }
-          data.push(row);
-        }
-        var ws = XLSX.utils.aoa_to_sheet(data);
-        var rng = XLSX.utils.decode_range(ws["!ref"]);
-        for (var c = rng.s.c; c <= rng.e.c; c++) {
-          var cell = ws[XLSX.utils.encode_cell({ r: 0, c: c })];
-          if (cell)
-            cell.s = {
-              font: { bold: true, name: "Arial", sz: 10 },
-              fill: { fgColor: { rgb: "DBEAFE" }, patternType: "solid" },
-              alignment: { horizontal: "left" },
-            };
-        }
-        ws["!cols"] = labels.map(function (lbl, ci) {
-          var mx = lbl.length;
-          for (var ri = 0; ri < Math.min(gRows.length, 100); ri++) {
-            var v = gRows[ri][cols[ci]];
-            if (v && v.length > mx) mx = v.length;
-          }
-          return { wch: Math.min(mx + 2, 50) };
-        });
-        var wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Extraktion");
-        XLSX.writeFile(
-          wb,
-          (gFileName || "export") +
-            "_" +
-            new Date().toISOString().slice(0, 10) +
-            ".xlsx",
-        );
-        showToast(gRows.length + " Zeilen exportiert");
-      }
+function renderTreeNode(treeNode,depth){
+  var h='';
+  var childKeys=Object.keys(treeNode.children);
+  for(var i=0;i<childKeys.length;i++){
+    var key=childKeys[i],child=treeNode.children[key];
+    var groupId=child.fullPath||key,isCollapsed=gCollapsed.has(groupId);
+    var totalFields=countTreeFields(child),selectedInGroup=countTreeSelected(child);
+    var indent=depth*16;
+    h+='<div class="tree-group">';
+    h+='<div class="tree-header" style="padding-left:'+(8+indent)+'px" data-gid="'+esc(groupId)+'" onclick="doToggleGroup(this)">';
+    h+='<div class="tree-toggle'+(isCollapsed?'':' open')+'">▶</div>';
+    h+='<div class="tree-tag">'+esc(key)+'</div>';
+    if(selectedInGroup>0) h+='<div class="tree-cnt has-sel">'+selectedInGroup+'/'+totalFields+'</div>';
+    else h+='<div class="tree-cnt">'+totalFields+'</div>';
+    h+='</div>';
+    h+='<div class="tree-children'+(isCollapsed?' collapsed':'')+'" data-gid-body="'+esc(groupId)+'">';
+    h+='<div class="tree-indent" style="margin-left:'+(14+indent)+'px">';
+    for(var fi2=0;fi2<child.fields.length;fi2++) h+=renderFieldItem(child.fields[fi2]);
+    h+=renderTreeNode(child,depth+1);
+    h+='</div></div></div>';
+  }
+  for(var j=0;j<treeNode.fields.length;j++){
+    if(depth===0) h+=renderFieldItem(treeNode.fields[j]);
+  }
+  return h;
+}
 
-      /* UTILS */
-      function el(id) {
-        return document.getElementById(id);
-      }
-      function esc(s) {
-        return String(s)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      }
-      function pathLabel(path) {
-        var m = path.match(/\[([^\]]+)\](?:\/([^\/]+))?$/);
-        if (m) return m[2] ? m[1] + " / " + m[2] : m[1];
-        return path.split("/").pop().replace("@", "");
-      }
-      function setFooter() {
-        el("finfo").innerHTML =
-          "<b>" +
-          gRows.length +
-          "</b> Datensätze · <b>" +
-          gFields.length +
-          "</b> Felder erkannt";
-      }
-      function setPg(pct, lbl) {
-        el("pgwrap").classList.add("show");
-        el("pgfill").style.width = pct + "%";
-        el("pglbl").textContent = lbl;
-      }
-      function hidePg() {
-        el("pgwrap").classList.remove("show");
-      }
-      var _tt;
-      function showToast(msg, isErr) {
-        var t = el("toast");
-        t.textContent = msg;
-        t.className = "toast show" + (isErr ? " err" : "");
-        clearTimeout(_tt);
-        _tt = setTimeout(function () {
-          t.classList.remove("show");
-        }, 3000);
-      }
-    </script>
-  </body>
+function renderFieldItem(f){
+  var sel=gSelected.has(f.path),cls=f.isAttr?'at':'';
+  return '<div class="fi'+(sel?' sel':'')+'" data-path="'+esc(f.path)+'" onclick="doToggle(this)"><div class="fck"></div><div class="fp" title="'+esc(f.path)+'"><span class="'+cls+'">'+esc(f.leaf)+'</span></div><div class="fc">'+f.count+'</div></div>';
+}
+
+function countTreeFields(t){ var c=t.fields.length; Object.keys(t.children).forEach(function(k){ c+=countTreeFields(t.children[k]) }); return c }
+function countTreeSelected(t){ var c=0; for(var i=0;i<t.fields.length;i++){ if(gSelected.has(t.fields[i].path)) c++ } Object.keys(t.children).forEach(function(k){ c+=countTreeSelected(t.children[k]) }); return c }
+
+/* ══════════════════════════════════════
+   FIELD LIST RENDER
+══════════════════════════════════════ */
+function renderList(){
+  var c=$('flist');
+  if(!gFields.length){ c.innerHTML='<div class="empty-msg">← XML hochladen<br>um Felder zu erkunden</div>'; return }
+  var list=gFields.slice();
+  if(gQuery){ var q=gQuery.toLowerCase(); list=list.filter(function(f){ return f.path.toLowerCase().indexOf(q)!==-1 }) }
+  if(!list.length){ c.innerHTML='<div class="empty-msg">Keine Treffer</div>'; return }
+  if(gView==='tree'){ c.innerHTML=renderTreeNode(buildTree(list),0); return }
+  if(gView==='az') list.sort(function(a,b){ return a.path.localeCompare(b.path) });
+  var h='';
+  for(var i=0;i<list.length;i++){
+    var f=list[i],sel=gSelected.has(f.path);
+    var kvm=f.path.match(/^(.*?)(\[[^\]]+\].*)$/);
+    var pre,lf;
+    if(kvm){ pre=kvm[1].replace(/\/$/,''); lf=kvm[2] }
+    else{ var pts=f.path.split('/'); pre=pts.slice(0,-1).join('/'); lf=pts[pts.length-1] }
+    var lfc=f.isAttr?'at':'';
+    var dp=pre?'<span style="color:var(--muted)">'+esc(pre)+'/</span><span class="'+lfc+'">'+esc(lf)+'</span>':'<span class="'+lfc+'">'+esc(lf)+'</span>';
+    h+='<div class="fi'+(sel?' sel':'')+'" data-path="'+esc(f.path)+'" onclick="doToggle(this)"><div class="fck"></div><div class="fp" title="'+esc(f.path)+'">'+dp+'</div><div class="fc">'+f.count+'</div></div>';
+  }
+  c.innerHTML=h;
+}
+
+/* ══════════════════════════════════════
+   INTERACTIONS
+══════════════════════════════════════ */
+function doToggleGroup(el2){
+  var gid=el2.getAttribute('data-gid');
+  if(gCollapsed.has(gid)) gCollapsed.delete(gid); else gCollapsed.add(gid);
+  var arrow=el2.querySelector('.tree-toggle'); if(arrow) arrow.classList.toggle('open');
+  var body=document.querySelector('[data-gid-body="'+gid+'"]'); if(body) body.classList.toggle('collapsed');
+  stateSave();
+}
+function doToggle(e){ var p=e.getAttribute('data-path'); if(!p) return; if(gSelected.has(p)) gSelected.delete(p); else gSelected.add(p); $('ebtn').disabled=gSelected.size===0; syncBtns(); renderList(); renderTable(); stateSave() }
+function doAll(){ gFields.forEach(function(f){ gSelected.add(f.path) }); $('ebtn').disabled=false; syncBtns(); renderList(); renderTable(); stateSave() }
+function doNone(){ gSelected.clear(); $('ebtn').disabled=true; syncBtns(); renderList(); renderTable(); stateSave() }
+function doView(v){ gView=v; syncBtns(); renderList(); stateSave() }
+function doSearch(q){ gQuery=q; renderList() }
+function syncBtns(){
+  var n=0; for(var i=0;i<gFields.length;i++){ if(gSelected.has(gFields[i].path)) n++ }
+  $('btnAll').className='tbtn'+(gFields.length>0&&n===gFields.length?' on':'');
+  $('btnNone').className='tbtn'+(n===0?' on':'');
+  $('btnTree').className='tbtn'+(gView==='tree'?' on':'');
+  $('btnFlat').className='tbtn'+(gView==='flat'?' on':'');
+  $('btnSort').className='tbtn'+(gView==='az'?' on':'');
+}
+
+/* ══════════════════════════════════════
+   PREVIEW TABLE
+══════════════════════════════════════ */
+var PLIMIT=200;
+function renderTable(){
+  // if in hierarchy view, show that instead
+  var wrap=$('twrap'),stats=$('rstats');
+  if(!gSelected.size&&gXmlRoot){
+    // show hierarchy if no fields selected
+    wrap.innerHTML='<div class="hier-wrap">'+buildHierarchyHTML(gXmlRoot)+'</div>';
+    stats.innerHTML='<b>'+gRows.length+'</b> Datensätze · Hierarchie-Ansicht';
+    return;
+  }
+  if(!gSelected.size){ wrap.innerHTML='<div class="pempty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>'; stats.innerHTML='—'; return }
+  var cols=Array.from(gSelected),labels=cols.map(pathLabel),slice=gRows.slice(0,PLIMIT);
+  var th=''; for(var ci=0;ci<cols.length;ci++) th+='<th>'+esc(labels[ci])+'<span class="thx" data-path="'+esc(cols[ci])+'" onclick="doRmCol(this)">✕</span></th>';
+  var tb=''; for(var ri=0;ri<slice.length;ri++){ tb+='<tr>'; for(var ci2=0;ci2<cols.length;ci2++){ var v=slice[ri][cols[ci2]]; tb+=v!==undefined&&v!==''?'<td title="'+esc(v)+'">'+esc(v)+'</td>':'<td class="nil">—</td>' } tb+='</tr>' }
+  wrap.innerHTML='<table><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table>';
+  stats.innerHTML='<b>'+gRows.length+'</b> Zeilen · <b>'+cols.length+'</b> Spalten'+(gRows.length>PLIMIT?' · Vorschau: '+PLIMIT:'');
+}
+function doRmCol(e){ var p=e.getAttribute('data-path'); gSelected.delete(p); $('ebtn').disabled=gSelected.size===0; syncBtns(); renderList(); renderTable(); stateSave() }
+
+/* ══════════════════════════════════════
+   EXPORT X2E
+══════════════════════════════════════ */
+function doExport(){
+  if(!gSelected.size||!gRows.length) return;
+  var cols=Array.from(gSelected),labels=cols.map(pathLabel),data=[labels];
+  for(var ri=0;ri<gRows.length;ri++){ var row=[]; for(var ci=0;ci<cols.length;ci++){ var v=gRows[ri][cols[ci]]; row.push(v!==undefined?v:'') } data.push(row) }
+  var ws=XLSX.utils.aoa_to_sheet(data);
+  var rng=XLSX.utils.decode_range(ws['!ref']);
+  for(var c=rng.s.c;c<=rng.e.c;c++){ var cell=ws[XLSX.utils.encode_cell({r:0,c:c})]; if(cell) cell.s={font:{bold:true,name:'Arial',sz:10},fill:{fgColor:{rgb:'1E3A5F'},patternType:'solid'},alignment:{horizontal:'left'}} }
+  ws['!cols']=labels.map(function(lbl,ci){ var mx=lbl.length; for(var ri=0;ri<Math.min(gRows.length,100);ri++){ var v=gRows[ri][cols[ci]]; if(v&&v.length>mx) mx=v.length } return{wch:Math.min(mx+2,50)} });
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Extraktion');
+  XLSX.writeFile(wb,(gFileName||'export')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  showToast(gRows.length+' Zeilen exportiert');
+}
+
+/* ══════════════════════════════════════
+   DASHBOARD ENGINE
+══════════════════════════════════════ */
+var dashCards=[];
+var dashSelectedWidget=null;
+var dashCfgState={field:null};
+
+var WIDGET_TYPES=[
+  {id:'overview',   icon:'📊', name:'Übersicht',      desc:'Zeilen, Felder, Füllrate'},
+  {id:'valuedist',  icon:'📈', name:'Werte-Verteilung', desc:'Top-Werte eines Feldes'},
+  {id:'fillrate',   icon:'🔵', name:'Füll-Analyse',    desc:'Datenvollständigkeit'},
+  {id:'uniquevals', icon:'🔤', name:'Unique Values',   desc:'Eindeutige Werte eines Feldes'},
+  {id:'schema',     icon:'🌲', name:'XML-Schema',      desc:'Hierarchie-Ansicht der Struktur'},
+];
+
+function initDashboard(){
+  var menu=$('dashWidgetMenu');
+  var h='';
+  for(var i=0;i<WIDGET_TYPES.length;i++){
+    var wt=WIDGET_TYPES[i];
+    h+='<div class="dash-widget-item" id="wmenu_'+wt.id+'" onclick="selectWidget(\''+wt.id+'\')">';
+    h+='<div class="wicon">'+wt.icon+'</div>';
+    h+='<div><div class="winfo-name">'+wt.name+'</div><div class="winfo-desc">'+wt.desc+'</div></div>';
+    h+='</div>';
+  }
+  menu.innerHTML=h;
+  renderDashCanvas();
+}
+
+function selectWidget(id){
+  dashSelectedWidget=id;
+  WIDGET_TYPES.forEach(function(wt){
+    var el=$('wmenu_'+wt.id); if(el) el.className='dash-widget-item'+(wt.id===id?' active':'');
+  });
+  renderDashCfg(id);
+  $('addWidgetBtn').disabled=!gRows.length&&id!=='schema';
+}
+
+function renderDashCfg(id){
+  var cfg=$('dashCfg');
+  if(!gRows.length&&id!=='schema'){
+    cfg.innerHTML='<div class="empty-msg" style="padding:10px 0">Zuerst eine XML-Datei laden</div>';
+    return;
+  }
+  var fieldOptions='<option value="">-- Feld wählen --</option>';
+  for(var i=0;i<gFields.length;i++) fieldOptions+='<option value="'+esc(gFields[i].path)+'">'+esc(gFields[i].leaf+' ('+gFields[i].count+')')+'</option>';
+
+  if(id==='overview'||id==='schema'){
+    cfg.innerHTML='<div class="cfg-hint">Kein Feld erforderlich. Direkt hinzufügen.</div>';
+  } else {
+    cfg.innerHTML='<div class="dash-cfg-row"><span class="dash-cfg-lbl">Feld</span><select class="dash-cfg-sel" id="dashCfgField" onchange="dashCfgState.field=this.value">'+fieldOptions+'</select></div>';
+    dashCfgState.field=null;
+  }
+  $('addWidgetBtn').disabled=false;
+}
+
+function doAddWidget(){
+  if(!dashSelectedWidget) return;
+  var needsField=(dashSelectedWidget==='valuedist'||dashSelectedWidget==='fillrate'||dashSelectedWidget==='uniquevals');
+  var cfgFieldEl=$('dashCfgField');
+  if(needsField&&(!cfgFieldEl||!cfgFieldEl.value)){ showToast('Bitte ein Feld auswählen',true); return }
+  var card={id:'card_'+Date.now(),type:dashSelectedWidget,field:cfgFieldEl?cfgFieldEl.value:null};
+  dashCards.push(card);
+  renderDashCanvas();
+  showToast('Widget hinzugefügt');
+}
+
+function removeCard(id){ dashCards=dashCards.filter(function(c){ return c.id!==id }); renderDashCanvas() }
+
+function renderDashCanvas(){
+  var canvas=$('dashCanvas');
+  var stats=$('rstatsDash');
+  if(!dashCards.length){
+    canvas.innerHTML='<div class="dash-canvas-empty"><div class="icon">⬡</div><div>Widgets aus dem linken Panel hinzufügen</div></div>';
+    stats.innerHTML='—';
+    return;
+  }
+  stats.innerHTML='<b>'+dashCards.length+'</b> Widgets';
+  var h='';
+  for(var i=0;i<dashCards.length;i++) h+=renderDashCard(dashCards[i]);
+  canvas.innerHTML=h;
+}
+
+function renderDashCard(card){
+  var title='', sub='', body='';
+  var wt=WIDGET_TYPES.filter(function(w){ return w.id===card.type })[0];
+  title=wt?wt.icon+' '+wt.name:'Widget';
+
+  if(card.type==='overview'){
+    sub='XML-Daten Übersicht';
+    var filled=0,total=gFields.length*gRows.length;
+    for(var fi=0;fi<gFields.length;fi++) filled+=gFields[fi].count;
+    var fillPct=total>0?Math.round(filled/total*100):0;
+    body='<div class="stat-grid">';
+    body+='<div class="stat-cell"><div class="stat-cell-val">'+gRows.length+'</div><div class="stat-cell-lbl">Datensätze</div></div>';
+    body+='<div class="stat-cell"><div class="stat-cell-val green">'+gFields.length+'</div><div class="stat-cell-lbl">Felder</div></div>';
+    body+='<div class="stat-cell"><div class="stat-cell-val amber">'+fillPct+'%</div><div class="stat-cell-lbl">Füllrate</div></div>';
+    body+='</div>';
+  }
+  else if(card.type==='schema'){
+    sub='XML-Hierarchie';
+    if(gXmlRoot) body='<div style="max-height:320px;overflow:auto">'+buildHierarchyHTML(gXmlRoot)+'</div>';
+    else body='<div class="empty-msg">Keine XML-Daten geladen</div>';
+  }
+  else if(card.type==='valuedist'&&card.field){
+    var fieldMeta=gFields.filter(function(f){ return f.path===card.field })[0];
+    sub='Feld: '+(fieldMeta?fieldMeta.leaf:card.field);
+    var counts={};
+    for(var ri=0;ri<gRows.length;ri++){
+      var v=gRows[ri][card.field]||'(leer)';
+      counts[v]=(counts[v]||0)+1;
+    }
+    var sorted=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a] }).slice(0,12);
+    var max=sorted.length>0?counts[sorted[0]]:1;
+    body='<div class="bar-chart">';
+    for(var si=0;si<sorted.length;si++){
+      var lbl=sorted[si], cnt=counts[lbl], pct=Math.round(cnt/max*100);
+      body+='<div class="bar-row"><div class="bar-lbl" title="'+esc(lbl)+'">'+esc(lbl.length>18?lbl.substring(0,18)+'…':lbl)+'</div>';
+      body+='<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%"></div></div>';
+      body+='<div class="bar-cnt">'+cnt+'</div></div>';
+    }
+    body+='</div>';
+  }
+  else if(card.type==='fillrate'&&card.field){
+    var fm=gFields.filter(function(f){ return f.path===card.field })[0];
+    sub='Feld: '+(fm?fm.leaf:card.field);
+    var filled2=fm?fm.count:0, total2=gRows.length;
+    var pct2=total2>0?Math.round(filled2/total2*100):0;
+    var r=30, circ=2*Math.PI*r, dash=circ*pct2/100;
+    var col=pct2>=80?'var(--green)':pct2>=50?'var(--amber)':'var(--red)';
+    body='<div class="fill-gauge">';
+    body+='<div class="fill-gauge-arc"><svg viewBox="0 0 70 70"><circle cx="35" cy="35" r="'+r+'" fill="none" stroke="var(--surf3)" stroke-width="5"/>';
+    body+='<circle cx="35" cy="35" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="5" stroke-dasharray="'+dash+' '+circ+'" stroke-linecap="round" transform="rotate(-90 35 35)"/></svg>';
+    body+='<div class="fill-gauge-pct">'+pct2+'%</div></div>';
+    body+='<div class="fill-gauge-info"><div class="fill-gauge-name">'+(fm?fm.leaf:card.field)+'</div>';
+    body+='<div class="fill-gauge-sub">'+filled2+' von '+total2+' befüllt</div></div>';
+    body+='</div>';
+  }
+  else if(card.type==='uniquevals'&&card.field){
+    var fm2=gFields.filter(function(f){ return f.path===card.field })[0];
+    sub='Feld: '+(fm2?fm2.leaf:card.field);
+    var uv={};
+    for(var ri2=0;ri2<gRows.length;ri2++){
+      var v2=gRows[ri2][card.field]; if(v2) uv[v2]=(uv[v2]||0)+1;
+    }
+    var uvKeys=Object.keys(uv).sort(function(a,b){ return uv[b]-uv[a] }).slice(0,15);
+    body='<table class="uv-table"><tbody>';
+    for(var ui=0;ui<uvKeys.length;ui++) body+='<tr><td>'+esc(uvKeys[ui])+'</td><td>'+uv[uvKeys[ui]]+'×</td></tr>';
+    if(Object.keys(uv).length>15) body+='<tr><td style="color:var(--muted)">'+(Object.keys(uv).length-15)+' weitere…</td><td></td></tr>';
+    body+='</tbody></table>';
+    sub+=' · '+Object.keys(uv).length+' unique';
+  }
+
+  return '<div class="dash-card" id="'+card.id+'">'
+    +'<div class="dash-card-hd"><div><div class="dash-card-title">'+esc(title)+'</div><div class="dash-card-sub">'+esc(sub)+'</div></div>'
+    +'<button class="dash-card-del" onclick="removeCard(\''+card.id+'\')">✕ entfernen</button></div>'
+    +'<div class="dash-card-body">'+body+'</div></div>';
+}
+
+/* ══════════════════════════════════════
+   FOOTER HELPERS
+══════════════════════════════════════ */
+function setFooterX2E(){ $('finfo').innerHTML='<b>'+gRows.length+'</b> Datensätze · <b>'+gFields.length+'</b> Felder erkannt' }
+function setFooterE2X(){ $('finfo').innerHTML='<b>'+eRows.length+'</b> Zeilen · <b>'+eHeaders.length+'</b> Spalten geladen' }
+</script>
+</body>
 </html>
