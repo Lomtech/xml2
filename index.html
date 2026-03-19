@@ -1246,10 +1246,10 @@ var PLIMIT=200;
 function renderTable(){
   // if in hierarchy view, show that instead
   var wrap=$('twrap'),stats=$('rstats');
-  if(!gSelected.size&&gXmlRoot){
-    // show hierarchy if no fields selected
-    wrap.innerHTML='<div class="hier-wrap">'+buildHierarchyHTML(gXmlRoot)+'</div>';
-    stats.innerHTML='<b>'+gRows.length+'</b> Datensätze · Hierarchie-Ansicht';
+  if(!gSelected.size&&gFields.length){
+    // show complete hierarchy from fields (includes all KV variants)
+    wrap.innerHTML='<div class="hier-wrap">'+buildHierarchyFromFields(gFields)+'</div>';
+    stats.innerHTML='<b>'+gRows.length+'</b> Datensätze · <b>'+gFields.length+'</b> Felder · Hierarchie-Ansicht';
     return;
   }
   if(!gSelected.size){ wrap.innerHTML='<div class="pempty"><div class="icon">⬡</div><div>Felder auswählen für Vorschau</div></div>'; stats.innerHTML='—'; return }
@@ -1373,69 +1373,88 @@ function doExport(){
    HIERARCHY FROM FIELDS (fallback when gXmlRoot is null)
 ══════════════════════════════════════ */
 function buildHierarchyFromFields(fields){
-  // Build a tree from the path segments of gFields
-  var tree={};  // nested: { tagName: { _fields:[], _children:{} } }
+  // Uses arrays for children → stable document order guaranteed
+  // KV bracket-segments like INVESTMENTIDENTIFIER[GFIIN] are folded back into
+  // their base tag (INVESTMENTIDENTIFIER) and the key values listed as badges.
+
+  var root={tag:'ROOT', children:[], map:{}, kvKeys:[], fields:[]};
+
+  function getOrCreate(parent, seg){
+    // Strip trailing [KEY] bracket → base tag + kv key
+    var m=seg.match(/^(.*)\[([^\]]*)\]$/);
+    var base=m?m[1]:seg;
+    var kvVal=m?m[2]:null;
+    if(!parent.map[base]){
+      var node={tag:base, children:[], map:{}, kvKeys:[], fields:[], isAttr:base.charAt(0)==='@'};
+      parent.map[base]=node;
+      parent.children.push(node);  // array keeps insertion/document order
+    }
+    var n=parent.map[base];
+    if(kvVal && n.kvKeys.indexOf(kvVal)===-1) n.kvKeys.push(kvVal);
+    return n;
+  }
 
   for(var i=0;i<fields.length;i++){
     var parts=fields[i].path.split('/');
-    var node=tree;
+    var node=root;
     for(var p=0;p<parts.length;p++){
-      var seg=parts[p];
-      if(!node[seg]) node[seg]={_fields:[],_children:{}};
-      if(p===parts.length-1) node[seg]._fields.push(fields[i]);
-      node=node[seg]._children;
+      node=getOrCreate(node, parts[p]);
+      if(p===parts.length-1) node.fields.push(fields[i]);
     }
   }
 
-  // Count totals & max depth
-  var totalEls=0, totalAttrs=0, maxDepth=0;
-  function countTree(node,depth){
-    if(depth>maxDepth) maxDepth=depth;
-    var keys=Object.keys(node);
-    for(var i=0;i<keys.length;i++){
-      totalEls++;
-      var flds=node[keys[i]]._fields;
-      for(var j=0;j<flds.length;j++) if(flds[j].isAttr) totalAttrs++;
-      countTree(node[keys[i]]._children, depth+1);
-    }
-  }
-  countTree(tree,0);
+  // Stats
+  var totalNodes=0, totalAttrs=0;
+  function countN(n){ totalNodes++; if(n.isAttr) totalAttrs++; for(var i=0;i<n.children.length;i++) countN(n.children[i]); }
+  for(var i=0;i<root.children.length;i++) countN(root.children[i]);
+
+  function maxDepthFn(n,d){ var m=d; for(var i=0;i<n.children.length;i++){ var cd=maxDepthFn(n.children[i],d+1); if(cd>m)m=cd; } return m; }
+  var maxD=0; for(var i=0;i<root.children.length;i++){ var d=maxDepthFn(root.children[i],1); if(d>maxD)maxD=d; }
 
   var html='<div class="hier-stats-bar">';
-  html+='<div class="hier-stat"><div class="hier-stat-val">'+totalEls+'</div><div class="hier-stat-lbl">Elemente (Schema)</div></div>';
+  html+='<div class="hier-stat"><div class="hier-stat-val">'+fields.length+'</div><div class="hier-stat-lbl">Felder gesamt</div></div>';
   html+='<div class="hier-stat"><div class="hier-stat-val green">'+totalAttrs+'</div><div class="hier-stat-lbl">Attribute</div></div>';
-  html+='<div class="hier-stat"><div class="hier-stat-val amber">'+(maxDepth+1)+'</div><div class="hier-stat-lbl">Tiefe (max)</div></div>';
+  html+='<div class="hier-stat"><div class="hier-stat-val amber">'+maxD+'</div><div class="hier-stat-lbl">Tiefe (max)</div></div>';
   html+='</div><div class="hier-schema">';
 
-  function renderNode(node,depth){
-    var keys=Object.keys(node);
-    for(var i=0;i<keys.length;i++){
-      var key=keys[i], entry=node[key];
-      var indentHTML='';
-      for(var d=0;d<depth;d++) indentHTML+='<div class="hier-line"></div>';
-      html+='<div class="hier-row"><div class="hier-indent">'+indentHTML+'</div><div class="hier-content">';
+  function renderN(node,depth){
+    for(var i=0;i<node.children.length;i++){
+      var ch=node.children[i];
+      var ind=''; for(var d=0;d<depth;d++) ind+='<div class="hier-line"></div>';
+      html+='<div class="hier-row"><div class="hier-indent">'+ind+'</div><div class="hier-content">';
 
-      // Element or attribute tag
-      var isAttr=key.charAt(0)==='@';
-      if(isAttr) html+='<span class="hier-tag-attr">'+esc(key)+'</span>';
-      else html+='<span class="hier-tag-el">&lt;'+esc(key)+'&gt;</span>';
-
-      // Show child tags inline
-      var childKeys=Object.keys(entry._children);
-      for(var ci=0;ci<Math.min(childKeys.length,5);ci++)
-        html+='<span class="hier-count">'+esc(childKeys[ci])+'</span>';
-      if(childKeys.length>5) html+='<span class="hier-count">+'+( childKeys.length-5)+' mehr</span>';
-
-      // Show fill count
-      if(entry._fields.length>0){
-        var cnt=entry._fields[0].count;
-        html+='<span class="hier-sample" style="margin-left:auto">'+cnt+' Werte</span>';
+      if(ch.isAttr){
+        html+='<span class="hier-tag-attr">@'+esc(ch.tag.slice(1))+'</span>';
+      } else if(ch.children.length===0 && ch.kvKeys.length===0){
+        // pure leaf
+        html+='<span class="hier-tag-text">'+esc(ch.tag)+'</span>';
+      } else {
+        html+='<span class="hier-tag-el">&lt;'+esc(ch.tag)+'&gt;</span>';
       }
+
+      // KV key badges (e.g. GFIIN, ISIN, WKN …)
+      for(var k=0;k<Math.min(ch.kvKeys.length,6);k++)
+        html+='<span class="hier-count" style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="'+esc(ch.kvKeys[k])+'">['+esc(ch.kvKeys[k].length>16?ch.kvKeys[k].substring(0,16)+'…':ch.kvKeys[k])+']</span>';
+      if(ch.kvKeys.length>6) html+='<span class="hier-count">+'+( ch.kvKeys.length-6)+' …</span>';
+
+      // child-tag summary for container nodes
+      if(ch.children.length>0 && ch.kvKeys.length===0){
+        var summary=ch.children.slice(0,4).map(function(c){ return c.tag }).join(', ');
+        if(ch.children.length>4) summary+=' …';
+        html+='<span class="hier-sample">'+esc(summary)+'</span>';
+      }
+
+      // fill count (rightmost)
+      if(ch.fields.length>0){
+        var best=ch.fields.reduce(function(a,b){ return b.count>a.count?b:a }, ch.fields[0]);
+        html+='<span class="hier-sample" style="margin-left:auto;flex-shrink:0;color:var(--muted)">'+best.count+'×</span>';
+      }
+
       html+='</div></div>';
-      renderNode(entry._children, depth+1);
+      renderN(ch, depth+1);
     }
   }
-  renderNode(tree,0);
+  renderN(root,0);
   html+='</div>';
   return html;
 }
@@ -1541,13 +1560,14 @@ function renderDashCard(card){
   }
   else if(card.type==='schema'){
     sub='XML-Hierarchie';
-    if(gXmlRoot){
-      body='<div style="max-height:320px;overflow:auto">'+buildHierarchyHTML(gXmlRoot)+'</div>';
-    } else if(gFields.length){
-      body='<div style="max-height:320px;overflow:auto">'+buildHierarchyFromFields(gFields)+'</div>';
-      sub='XML-Hierarchie (aus Feldern rekonstruiert)';
+    // Always use buildHierarchyFromFields when fields exist — it shows ALL KV variants
+    // (e.g. INVESTMENTIDENTIFIER[GFIIN/ISIN/WKN/...]) which gXmlRoot cannot provide
+    if(gFields.length){
+      body='<div style="max-height:400px;overflow:auto">'+buildHierarchyFromFields(gFields)+'</div>';
+    } else if(gXmlRoot){
+      body='<div style="max-height:400px;overflow:auto">'+buildHierarchyHTML(gXmlRoot)+'</div>';
     } else {
-      body='<div class="empty-msg">Keine XML-Daten geladen</div>';
+      body='<div class="empty-msg">Zuerst eine XML-Datei im Tab „XML → Excel" laden</div>';
     }
   }
   else if(card.type==='valuedist'&&card.field){
